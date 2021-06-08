@@ -1,0 +1,9 @@
+s3:
+    use_s3: !!bool "true"
+    endpoint_url: "http://192.168.56.253:9000"
+    aws_access_key_id: "minioadmin"
+    aws_secret_access_key: "minioadmin"
+    signature_version: "s3v4"
+    region_name: "us-east-1" 
+    bucket: "datasets"
+    s3_path: "nlp-data/tc"

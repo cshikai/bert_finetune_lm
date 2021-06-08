@@ -1,0 +1,13 @@
+
+
+model/src/logs/
+model/src/trained_models/
+model/src/data
+model/src/temp
+
+
+
+deploy/
+.DS_Store
+
+

@@ -1,0 +1,23 @@
+# To ensure app dependencies are ported from your virtual environment/host machine into your container, run 'pip freeze > requirements.txt' in the terminal to overwrite this file
+
+pandas==1.0.1
+scikit-learn==0.23.2
+requests==2.22.0
+SQLAlchemy==1.3.13
+Flask-SQLAlchemy==2.4.1
+tqdm==4.45.0
+mysql-connector-python>=8.0
+boto3==1.16.9
+scipy==1.4.1
+pytorch-lightning
+haversine
+geopy
+dipy
+pyproj
+tables==3.6.1
+
+python-snappy
+torchvision==0.8.2
+clearml
+
+matplotlib
