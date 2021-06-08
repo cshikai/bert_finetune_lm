@@ -26,7 +26,6 @@ class PMCDataPipeline(object):
         raw_url = 'https://drive.google.com/uc?id=1yUVHF8Lzvi9gY3YNMjM-n7hlJR7SaG7A'
         output = '/home/dh/Desktop/data_to_preprocess' # TODO check where to download data to
         gdown.download(raw_url, output, quiet=False)
-        
         with open(output) as f:
             data = json.load(f)
 
