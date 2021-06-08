@@ -1,6 +1,8 @@
 source: 'mysql+mysqlconnector://root:root@db:3306/intel_sample_y?use_pure=True'
       
-use_lower_only : !!bool 'true'
+# use_uncased: !!bool 'true'
+use_uncased: True
+
 data:
 
     valid_size: 0.2
