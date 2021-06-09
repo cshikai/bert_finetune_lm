@@ -49,13 +49,13 @@ class PMCDataPipeline(object):
             with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/uncased.json', 'w') as outfile:
                 json.dump(data, outfile)
             # upload file
-            uploadfile("uncased.json")
+            self.uploadfile("uncased.json")
         else:
             # output to a file
             with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/cased.json', 'w') as outfile:
                 json.dump(data, outfile)
             # upload file
-            uploadfile("cased.json")
+            self.uploadfile("cased.json")
 
     def uploadfile(filename):
         # upload this data to gdrive    
