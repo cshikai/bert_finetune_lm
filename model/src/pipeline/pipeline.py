@@ -12,6 +12,7 @@ import nltk
 import gdown
 from pydrive.drive import GoogleDrive
 from pydrive.auth import GoogleAuth
+import unidecode 
 
 
 class PMCDataPipeline(object):
@@ -33,16 +34,35 @@ class PMCDataPipeline(object):
         for ind, article in enumerate(data):
             for i, text in enumerate(data[ind]['text']):
                 data[ind]['text'][i] = re.sub(r'\w[.]\w', '. ', text)
+                # upper case everything after ., !, ?
+                data[ind]['text'][i] = re.sub("(^|[.?!])\s*([a-zA-Z])", lambda p: p.group(0).upper(), data[ind]['text'][i])
+                # split to sentences
                 data[ind]['text'][i] = tokenizer.tokenize(data[ind]['text'][i])
         
-        if self.use_uncased: # TODO double check if this is correct
-            # lowercase everything and replace accent markers
-            # upload this data to gdrive
-            pass
+                if self.use_uncased: # TODO double check if this is correct
+                    # lowercase everything and replace accent markers
+                    for j, sentence in enumerate(data[ind]['text'][i]):
+                        data[ind]['text'][i][j] = unidecode.unidecode(sentence.lower()) 
+                
+        if self.use_uncased:
+            # output to a file
+            with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/uncased.json', 'w') as outfile:
+                json.dump(data, outfile)
+            # upload file
+            uploadfile("uncased.json")
         else:
-            # upload unchanged data (with cases and accent markers retained) to gdrive
-            pass
-    
+            # output to a file
+            with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/cased.json', 'w') as outfile:
+                json.dump(data, outfile)
+            # upload file
+            uploadfile("cased.json")
+
+    def uploadfile(filename):
+        # upload this data to gdrive    
+        gfile = drive.CreateFile({'parents': [{'id': '1dxQeB6hVfvSIFUy64L1bnX668ehgX5nC'}]})
+        # Read file and set it as the content of this instance.
+        gfile.SetContentFile(filename)
+        gfile.Upload() # Upload the file.
 
     @staticmethod
     def add_pipeline_args(parent_parser):
