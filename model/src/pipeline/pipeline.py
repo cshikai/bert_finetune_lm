@@ -31,6 +31,8 @@ class PMCDataPipeline(object):
         with open(output) as f:
             data = json.load(f)
 
+        data_list = []
+
         # Separate the text of each section in 'text' into individual sentences
         for ind, article in enumerate(data):
             for i, text in enumerate(data[ind]['text']):
@@ -44,11 +46,14 @@ class PMCDataPipeline(object):
                     # lowercase everything and replace accent markers
                     for j, sentence in enumerate(data[ind]['text'][i]):
                         data[ind]['text'][i][j] = unidecode.unidecode(sentence.lower()) 
-                
+            
+            # remove title, and leave only list of sentences in list of sections in list of articles
+            data_list.append(data[ind]['text'])
+
         if self.use_uncased:
             # output to a file
             with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/uncased.json', 'w') as outfile:
-                json.dump(data, outfile)
+                json.dump(data_list, outfile)
             # login
             self.login()
             # upload file
@@ -56,7 +61,7 @@ class PMCDataPipeline(object):
         else:
             # output to a file
             with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/cased.json', 'w') as outfile:
-                json.dump(data, outfile)
+                json.dump(data_list, outfile)
             # login
             self.login()
             # upload file
