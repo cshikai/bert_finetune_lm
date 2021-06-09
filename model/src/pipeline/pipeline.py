@@ -48,21 +48,33 @@ class PMCDataPipeline(object):
             # output to a file
             with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/uncased.json', 'w') as outfile:
                 json.dump(data, outfile)
+            # login
+            self.login()
             # upload file
             self.uploadfile("uncased.json")
         else:
             # output to a file
             with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/cased.json', 'w') as outfile:
                 json.dump(data, outfile)
+            # login
+            self.login()
             # upload file
             self.uploadfile("cased.json")
 
+    def login():
+        global gauth, drive
+        gauth = GoogleAuth()
+        # Creates local webserver and auto handles authentication
+        gauth.LocalWebserverAuth() 
+        drive = GoogleDrive(gauth) 
+
     def uploadfile(filename):
-        # upload this data to gdrive    
+        # Get parent folder    
         gfile = drive.CreateFile({'parents': [{'id': '1dxQeB6hVfvSIFUy64L1bnX668ehgX5nC'}]})
-        # Read file and set it as the content of this instance.
+        # Read file and set it as the content of this instance
         gfile.SetContentFile(filename)
-        gfile.Upload() # Upload the file.
+        # Upload the file
+        gfile.Upload() 
 
     @staticmethod
     def add_pipeline_args(parent_parser):
