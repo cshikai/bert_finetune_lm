@@ -22,6 +22,7 @@ class PMCDataPipeline(object):
     def __call__(self):
         # your pipeline code here
         nltk.download(all)
+        sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
         # Download cleaned data from gdrive
         raw_url = 'https://drive.google.com/uc?id=1yUVHF8Lzvi9gY3YNMjM-n7hlJR7SaG7A'
@@ -36,8 +37,8 @@ class PMCDataPipeline(object):
                 data[ind]['text'][i] = re.sub(r'\w[.]\w', '. ', text)
                 # upper case everything after ., !, ?
                 data[ind]['text'][i] = re.sub("(^|[.?!])\s*([a-zA-Z])", lambda p: p.group(0).upper(), data[ind]['text'][i])
-                # split to sentences
-                data[ind]['text'][i] = tokenizer.tokenize(data[ind]['text'][i])
+                # split into sentences
+                data[ind]['text'][i] = sent_tokenizer.tokenize(data[ind]['text'][i])
         
                 if self.use_uncased: # TODO double check if this is correct
                     # lowercase everything and replace accent markers
