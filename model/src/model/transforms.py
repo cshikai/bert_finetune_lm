@@ -3,7 +3,51 @@ import torch
 from torch import Tensor
 import os
 import numpy as np
+import gdown
+import requests
+from transformers import BertTokenizer, BertForPreTraining
+import itertools
+import random
 
+
+class NPSLabels(data, ):
+    def __init__(self):
+        self.data = data # list of lists of sections where each section is a list of sentences
+    def __call__(self):
+        for ind, article in enumerate(self.data):
+            # list of all sentences in the article
+            bag = list(itertools.chain.from_iterable(article))
+            bag_size = len(bag)
+            sentence_a = []
+            sentence_b = []
+            labels = []
+            # output for each article should be a dict with the keys 'sentence_a', 'sentence_b', 'labels', whose values are the corr lists
+            for i, section in enumerate(article): # for each section in one article
+                section_size = len(section)
+                if (section_size<=1):
+                    continue
+                else:
+                    for j, sent in enumerate(section): # for each sentence in one section
+                        if (j <= section_size-2):
+                            sentence_a.append(sent)
+                            if (random.random() >= 0.5):
+                                # sentence_b is the correct next sentence after sentence_a
+                                sentence_b.append(section[j+1])
+                                labels.append(0)
+                            else:
+                                # sentence_b is the wrong next sentence after sentence_a
+                                rand_sent = sent
+                                while (rand_sent == sent):
+                                    randi = random.randint(0, bag_size-1)
+                                    rand_sent = bag[randi]
+                                sentence_b.append(rand_sent)
+                                labels.append(1)
+                        else: # end of section reached
+                            break
+            # store data (paired sentences) for each article as a dictionary
+            self.data[ind] = {'sentence_a': sentence_a, 'sentence_b': sentence_b, 'labels': labels}
+
+        
 
 class UpperClamp():
     '''
