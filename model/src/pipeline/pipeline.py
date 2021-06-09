@@ -32,7 +32,8 @@ class PMCDataPipeline(object):
         # Separate the text of each section in 'text' into individual sentences
         for ind, article in enumerate(data):
             for i, text in enumerate(data[ind]['text']):
-                data[ind]['text'][i] = tokenizer.tokenize(text)
+                data[ind]['text'][i] = re.sub(r'\w[.]\w', '. ', text)
+                data[ind]['text'][i] = tokenizer.tokenize(data[ind]['text'][i])
         
         if self.use_uncased: # TODO double check if this is correct
             # lowercase everything and replace accent markers
