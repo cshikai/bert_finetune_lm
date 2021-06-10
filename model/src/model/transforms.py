@@ -10,7 +10,7 @@ import itertools
 import random
 
 
-class NPSLabels(object):
+class NSPLabels(object):
     def __init__(self, data):
         self.data = data # list of lists of sections where each section is a list of sentences
     def __call__(self, data):
