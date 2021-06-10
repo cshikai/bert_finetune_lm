@@ -3,16 +3,38 @@ import os
 import json
 import copy
 
-
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torchvision.transforms import Compose
 import dask.dataframe as dd
 
-from .transforms import TimeEncoder
+from .transforms import TimeEncoder #TODO change this to importing our methods in transforms.py
 from . import transforms
 from typing import Dict
+
+class CovidDataset(Dataset):
+    """
+    Covid_Dataset Object
+    """
+
+    def __init__(self, raw_data, use_uncased):
+        self.use_uncased = use_uncased
+        pass
+
+
+    def __len__(self):
+        # len(dataset) returns the size of the dataset
+        pass
+
+
+    def __getitem__(self):
+        # support the indexing such that dataset[i] can be used to get ith sample
+        pass
+
+    
+    # other methods
+
 class FlightDataset(Dataset):
     """
     Flight_Dataset Object
