@@ -3,12 +3,10 @@ import torch
 from torch import Tensor
 import os
 import numpy as np
-import gdown
 import requests
 from transformers import BertTokenizer, BertForPreTraining
 import itertools
 import random
-
 
 class NSPLabels(object):
     def __init__(self, data):
@@ -52,31 +50,67 @@ class NSPLabels(object):
         
         return self.data 
 
-# class Tokenization(object):
-#     def __init__(self, data, task, use_uncase):
-#         self.data = data
-#         self.task = task
-#         self.use_uncase = use_uncase
-#     def __call__(self, data, task, use_uncase):
-#         self.data = data
-#         self.task = task
-#         self.use_uncase = use_uncase
+class MLMSentences(objects):
+    def __init__(self, data):
+        self.data = data
+    def __call__(self, data):
+        self.data = data 
+        sentence_list = []
+        # convert list of articles of sections of sentences to list of sentences
+        for article in self.data:
+            for section in article:
+                for sentence in section:
+                    sentence_list.append(sentence)
+        
+        return sentence_list
 
-#         if use_uncase:
-#             tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-#         else:
-#             tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+class Tokenization(object):
+    def __init__(self, data, task, use_uncase):
+        self.data = data
+        self.task = task
+        self.use_uncase = use_uncase
+    def __call__(self, data, task, use_uncase):
+        self.data = data
+        self.task = task
+        self.use_uncase = use_uncase
 
-#         if task == ""
-#         sentence_a = data['sentence_a']
-#         sentence_b = data['sentence_b']
+        if use_uncase:
+            tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        else:
+            tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+
+        if task == "NSP":
+            sentence_a = self.data['sentence_a']
+            sentence_b = self.data['sentence_b']
+            label = self.data['label']
+            # tokenize
+            model_inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
+            # get labels
+            model_inputs['labels'] = torch.LongTensor([label]).T
+        elif task == "MLM":
+            # tokenize
+            model_inputs = tokenizer(self.data, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
+            # get labels
+            model_inputs['labels'] = model_inputs.input_ids.detach().clone()
+            ## mask
+            # random arr of floats with equal dimensions to input_ids tensor
+            rand = torch.rand(model_inputs.input_ids.shape)
+            # mask arr
+            # 101 and 102 are the SEP & CLS tokens, don't want to mask them
+            mask_arr = (rand * 0.15) * (model_inputs.input_ids != 101) * (model_inputs.input_ids != 102) * (model_inputs.input_ids != 0)
+            # assigning masked input ids with 103
+            selection = []
+            for i in range(model_inputs.input_ids.shape[0]):
+                selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
+            
+            for i in range(model_inputs.input_ids.shape[0]):
+                model_inputs.input_ids[i, selection[i]] = 103
+        else:
+            pass # if we decide to fine tune more tasks
+            
+        return model_inputs 
 
         
-#         model_inputs = tokenizer(sentence_a, sentence_b, return_tensors = 'pt', max_length = 512, truncation=True, padding='max_length')
-
-
-        
-
 class UpperClamp():
     '''
     Clamps the values per column
