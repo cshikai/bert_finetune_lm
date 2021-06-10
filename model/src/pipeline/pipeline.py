@@ -21,6 +21,8 @@ class PMCDataPipeline(object):
         self.use_uncased = cfg['use_uncased'] # TODO not so sure about this, need to double check
     def __call__(self):
         # your pipeline code here
+        self.use_uncased = cfg['use_uncased'] # TODO not so sure about this, need to double check
+        
         nltk.download(all)
         sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
