@@ -10,17 +10,19 @@ import itertools
 import random
 
 
-class NPSLabels(data, ):
-    def __init__(self):
+class NPSLabels(object):
+    def __init__(self, data):
         self.data = data # list of lists of sections where each section is a list of sentences
-    def __call__(self):
+    def __call__(self, data):
+        self.data = data
+        
+        sentence_a = []
+        sentence_b = []
+        labels = []
         for ind, article in enumerate(self.data):
             # list of all sentences in the article
             bag = list(itertools.chain.from_iterable(article))
             bag_size = len(bag)
-            sentence_a = []
-            sentence_b = []
-            labels = []
             # output for each article should be a dict with the keys 'sentence_a', 'sentence_b', 'labels', whose values are the corr lists
             for i, section in enumerate(article): # for each section in one article
                 section_size = len(section)
@@ -44,8 +46,34 @@ class NPSLabels(data, ):
                                 labels.append(1)
                         else: # end of section reached
                             break
-            # store data (paired sentences) for each article as a dictionary
-            self.data[ind] = {'sentence_a': sentence_a, 'sentence_b': sentence_b, 'labels': labels}
+
+        # store data (paired sentences) for all articles as a dictionary
+        self.data = {'sentence_a': sentence_a, 'sentence_b': sentence_b, 'labels': labels}
+        
+        return self.data 
+
+# class Tokenization(object):
+#     def __init__(self, data, task, use_uncase):
+#         self.data = data
+#         self.task = task
+#         self.use_uncase = use_uncase
+#     def __call__(self, data, task, use_uncase):
+#         self.data = data
+#         self.task = task
+#         self.use_uncase = use_uncase
+
+#         if use_uncase:
+#             tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+#         else:
+#             tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+
+#         if task == ""
+#         sentence_a = data['sentence_a']
+#         sentence_b = data['sentence_b']
+
+        
+#         model_inputs = tokenizer(sentence_a, sentence_b, return_tensors = 'pt', max_length = 512, truncation=True, padding='max_length')
+
 
         
 
