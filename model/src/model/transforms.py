@@ -8,7 +8,7 @@ from transformers import BertTokenizer, BertForPreTraining
 import itertools
 import random
 
-class NSPLabels(object):
+class NSPLabels():
     def __init__(self, data):
         self.data = data # list of lists of sections where each section is a list of sentences
     def __call__(self, data):
@@ -50,7 +50,7 @@ class NSPLabels(object):
         
         return self.data 
 
-class MLMSentences(objects):
+class MLMSentences():
     def __init__(self, data):
         self.data = data
     def __call__(self, data):
@@ -64,7 +64,7 @@ class MLMSentences(objects):
         
         return sentence_list
 
-class Tokenization(object):
+class Tokenization():
     def __init__(self, data, task, use_uncase):
         self.data = data
         self.task = task
@@ -82,7 +82,7 @@ class Tokenization(object):
         if task == "NSP":
             sentence_a = self.data['sentence_a']
             sentence_b = self.data['sentence_b']
-            label = self.data['label']
+            label = self.data['labels']
             # tokenize
             model_inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
             # get labels
