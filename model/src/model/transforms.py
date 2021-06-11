@@ -9,9 +9,9 @@ import itertools
 import random
 
 class NSPLabels(object):
-    def __init__(self, data):
+    def __init__(self, data: list):
         self.data = data # list of lists of sections where each section is a list of sentences
-    def __call__(self, data):
+    def __call__(self, data: list):
         self.data = data
         
         sentence_a = []
@@ -51,9 +51,9 @@ class NSPLabels(object):
         return self.data 
 
 class MLMSentences(objects):
-    def __init__(self, data):
+    def __init__(self, data: list):
         self.data = data
-    def __call__(self, data):
+    def __call__(self, data: list):
         self.data = data 
         sentence_list = []
         # convert list of articles of sections of sentences to list of sentences
@@ -65,11 +65,11 @@ class MLMSentences(objects):
         return sentence_list
 
 class Tokenization(object):
-    def __init__(self, data, task, use_uncase):
+    def __init__(self, data, task: str, use_uncase: bool):
         self.data = data
         self.task = task
         self.use_uncase = use_uncase
-    def __call__(self, data, task, use_uncase):
+    def __call__(self, data, task: str, use_uncase: bool):
         self.data = data
         self.task = task
         self.use_uncase = use_uncase
