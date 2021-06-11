@@ -23,7 +23,7 @@ class PMCDataPipeline(object):
         # your pipeline code here
         self.use_uncased = cfg['use_uncased'] # TODO not so sure about this, need to double check
         
-        nltk.download(all)
+        nltk.download('all')
         sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
         # Download cleaned data from gdrive
