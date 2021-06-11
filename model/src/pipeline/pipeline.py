@@ -28,7 +28,7 @@ class PMCDataPipeline(object):
 
         # Download cleaned data from gdrive
         raw_url = 'https://drive.google.com/uc?id=1yUVHF8Lzvi9gY3YNMjM-n7hlJR7SaG7A'
-        output = '/home/dh/Desktop/data_to_preprocess' # TODO check where to download data to
+        output = 'data_to_preprocess.json' # TODO check where to download data to
         gdown.download(raw_url, output, quiet=False)
         with open(output) as f:
             data = json.load(f)
@@ -54,7 +54,7 @@ class PMCDataPipeline(object):
 
         if self.use_uncased:
             # output to a file
-            with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/uncased.json', 'w') as outfile:
+            with open('uncased.json', 'w') as outfile:
                 json.dump(data_list, outfile)
             # login
             self.login()
@@ -62,7 +62,7 @@ class PMCDataPipeline(object):
             self.uploadfile("uncased.json")
         else:
             # output to a file
-            with open('/home/dh/Desktop/bert_finetune_lm/model/src/pipeline/cased.json', 'w') as outfile:
+            with open('cased.json', 'w') as outfile:
                 json.dump(data_list, outfile)
             # login
             self.login()
