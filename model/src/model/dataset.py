@@ -13,24 +13,44 @@ from .transforms import TimeEncoder #TODO change this to importing our methods i
 from . import transforms
 from typing import Dict
 
+
+
 class CovidDataset(Dataset):
     """
     Covid_Dataset Object
     """
 
-    def __init__(self, raw_data, use_uncased):
+    def __init__(self, data, use_uncased:bool, task:str):
+        self.data = data
         self.use_uncased = use_uncased
-        pass
+        self.task = task
+        
+    def __getitem__(self, idx):
+        # TODO Change path to open file
+        # data would have already been loaded into local drive in the pipeline folder
+        # dirname = os.path.dirname(__file__)
+        # filename = os.path.join(dirname, 'pipeline')
+        if self.use_uncased:
+            with open('uncased.json') as f:
+                data_cleaned = json.load(f)
+        else:
+            with open('cased.json') as f:
+                data_cleaned = json.load(f)
 
+        dataset = []
+        if(self.task == "NSP"):
+            nsp = transforms.NSPLabels(data=data_cleaned)
+            dataset = nsp()
+        elif(self.task == "MLM"):
+            mlm = transforms.MLMSentences(data=data_cleaned)
+            dataset = mlm()
+
+        tokenized_data = transforms.Tokenization(data=dataset, task=self.task, use_uncase=self.use_uncased)
+        
+        return {key: torch.tensor(val[idx]) for key, val in tokenized_data().items()}
 
     def __len__(self):
-        # len(dataset) returns the size of the dataset
-        pass
-
-
-    def __getitem__(self):
-        # support the indexing such that dataset[i] can be used to get ith sample
-        pass
+        return len(self.data.input_ids)
 
     
     # other methods

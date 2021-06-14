@@ -11,9 +11,7 @@ import random
 class NSPLabels():
     def __init__(self, data: list):
         self.data = data # list of lists of sections where each section is a list of sentences
-    def __call__(self, data: list):
-        self.data = data
-        
+    def __call__(self):
         sentence_a = []
         sentence_b = []
         labels = []
@@ -53,8 +51,7 @@ class NSPLabels():
 class MLMSentences():
     def __init__(self, data: list):
         self.data = data
-    def __call__(self, data: list):
-        self.data = data 
+    def __call__(self):
         sentence_list = []
         # convert list of articles of sections of sentences to list of sentences
         for article in self.data:
@@ -69,17 +66,14 @@ class Tokenization():
         self.data = data
         self.task = task
         self.use_uncase = use_uncase
-    def __call__(self, data, task: str, use_uncase: bool):
-        self.data = data
-        self.task = task
-        self.use_uncase = use_uncase
+    def __call__(self):
 
-        if use_uncase:
+        if self.use_uncase:
             tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         else:
             tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
-        if task == "NSP":
+        if self.task == "NSP":
             sentence_a = self.data['sentence_a']
             sentence_b = self.data['sentence_b']
             label = self.data['labels']
@@ -87,7 +81,7 @@ class Tokenization():
             model_inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
             # get labels
             model_inputs['labels'] = torch.LongTensor([label]).T
-        elif task == "MLM":
+        elif self.task == "MLM":
             # tokenize
             model_inputs = tokenizer(self.data, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
             # get labels
