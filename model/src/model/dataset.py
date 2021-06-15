@@ -33,22 +33,15 @@ class CovidDataset(Dataset):
                 self.data = json.load(f)
         
     def __getitem__(self, idx):
-        dataset = []
-        if(self.task == "NSP"):
-            nsp = transforms.NSPLabels(data=self.data)
-            dataset = nsp()
-        elif(self.task == "MLM"):
-            mlm = transforms.MLMSentences(data=self.data)
-            dataset = mlm()
-
-        tokenized_data = transforms.Tokenization(data=dataset, task=self.task, use_uncase=self.use_uncased)
-        
+        # tokenize data
+        tokenize = transforms.Tokenization(data=self.data, task=self.task, use_uncased=self.use_uncased)
+        tokenized_data = tokenize()
+        # return with index
         return {key: torch.tensor(val[idx]) for key, val in tokenized_data().items()}
 
     def __len__(self):
         return len(self.data.input_ids)
 
-    
     # other methods
 
 class FlightDataset(Dataset):
