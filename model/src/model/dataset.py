@@ -20,29 +20,25 @@ class CovidDataset(Dataset):
     Covid_Dataset Object
     """
 
-    def __init__(self, data, use_uncased:bool, task:str):
-        self.data = data
+    def __init__(self, use_uncased:bool, task:str):
         self.use_uncased = use_uncased
         self.task = task
-        
-    def __getitem__(self, idx):
-        # TODO Change path to open file
+        # TODO Change path to load data
         # data would have already been loaded into local drive in the pipeline folder
-        # dirname = os.path.dirname(__file__)
-        # filename = os.path.join(dirname, 'pipeline')
         if self.use_uncased:
             with open('uncased.json') as f:
-                data_cleaned = json.load(f)
+                self.data = json.load(f)
         else:
             with open('cased.json') as f:
-                data_cleaned = json.load(f)
-
+                self.data = json.load(f)
+        
+    def __getitem__(self, idx):
         dataset = []
         if(self.task == "NSP"):
-            nsp = transforms.NSPLabels(data=data_cleaned)
+            nsp = transforms.NSPLabels(data=self.data)
             dataset = nsp()
         elif(self.task == "MLM"):
-            mlm = transforms.MLMSentences(data=data_cleaned)
+            mlm = transforms.MLMSentences(data=self.data)
             dataset = mlm()
 
         tokenized_data = transforms.Tokenization(data=dataset, task=self.task, use_uncase=self.use_uncased)
