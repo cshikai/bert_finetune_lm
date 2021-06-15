@@ -62,13 +62,13 @@ class MLMSentences():
         return sentence_list
 
 class Tokenization():
-    def __init__(self, data, task: str, use_uncase: bool):
+    def __init__(self, data, task: str, use_uncased: bool):
         self.data = data
         self.task = task
-        self.use_uncase = use_uncase
+        self.use_uncased = use_uncased
     def __call__(self):
 
-        if self.use_uncase:
+        if self.use_uncased:
             tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         else:
             tokenizer = BertTokenizer.from_pretrained('bert-base-cased')

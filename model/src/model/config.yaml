@@ -45,6 +45,7 @@ data:
     max_flights: 400
 ---
 model:
+    use_uncased: True
     hidden_layers: 2
     hidden_size: 128
     enc_dropout: 0.0
