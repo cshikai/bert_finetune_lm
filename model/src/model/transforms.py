@@ -8,9 +8,10 @@ from transformers import BertTokenizer, BertForPreTraining
 import itertools
 import random
 
-class NSPLabels():
-    def __init__(self, data: list):
+class NSPTokenization():
+    def __init__(self, data: list, tokenizer):
         self.data = data # list of lists of sections where each section is a list of sentences
+        self.data = tokenizer # either cased or uncased tokenizer
     def __call__(self):
         sentence_a = []
         sentence_b = []
@@ -42,15 +43,18 @@ class NSPLabels():
                                 labels.append(1)
                         else: # end of section reached
                             break
-
-        # store data (paired sentences) for all articles as a dictionary
-        self.data = {'sentence_a': sentence_a, 'sentence_b': sentence_b, 'labels': labels}
+                        
+        # tokenize
+        model_inputs = self.tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
+        # get labels
+        model_inputs['labels'] = torch.LongTensor([labels]).T
         
-        return self.data 
+        return model_inputs 
 
-class MLMSentences():
-    def __init__(self, data: list):
+class MLMTokenization():
+    def __init__(self, data: list, tokenizer):
         self.data = data
+        self.tokenizer = tokenizer
     def __call__(self):
         sentence_list = []
         # convert list of articles of sections of sentences to list of sentences
@@ -59,7 +63,25 @@ class MLMSentences():
                 for sentence in section:
                     sentence_list.append(sentence)
         
-        return sentence_list
+        # tokenize
+        model_inputs = self.tokenizer(sentence_list, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
+        # get labels
+        model_inputs['labels'] = model_inputs.input_ids.detach().clone()
+        ## mask
+        # random arr of floats with equal dimensions to input_ids tensor
+        rand = torch.rand(model_inputs.input_ids.shape)
+        # mask arr
+        # 101 and 102 are the SEP & CLS tokens, don't want to mask them
+        mask_arr = (rand * 0.15) * (model_inputs.input_ids != 101) * (model_inputs.input_ids != 102) * (model_inputs.input_ids != 0)
+        # assigning masked input ids with 103
+        selection = []
+        for i in range(model_inputs.input_ids.shape[0]):
+            selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
+            
+        for i in range(model_inputs.input_ids.shape[0]):
+            model_inputs.input_ids[i, selection[i]] = 103
+       
+        return model_inputs
 
 class Tokenization():
     def __init__(self, data, task: str, use_uncased: bool):
@@ -67,42 +89,22 @@ class Tokenization():
         self.task = task
         self.use_uncased = use_uncased
     def __call__(self):
-
+        # define tokenizer
         if self.use_uncased:
             tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         else:
             tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-
+        # task
         if self.task == "NSP":
-            sentence_a = self.data['sentence_a']
-            sentence_b = self.data['sentence_b']
-            label = self.data['labels']
-            # tokenize
-            model_inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
-            # get labels
-            model_inputs['labels'] = torch.LongTensor([label]).T
+            nsp = NSPTokenization(data=self.data, tokenizer=tokenizer)
+            tokenized = nsp()
         elif self.task == "MLM":
-            # tokenize
-            model_inputs = tokenizer(self.data, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
-            # get labels
-            model_inputs['labels'] = model_inputs.input_ids.detach().clone()
-            ## mask
-            # random arr of floats with equal dimensions to input_ids tensor
-            rand = torch.rand(model_inputs.input_ids.shape)
-            # mask arr
-            # 101 and 102 are the SEP & CLS tokens, don't want to mask them
-            mask_arr = (rand * 0.15) * (model_inputs.input_ids != 101) * (model_inputs.input_ids != 102) * (model_inputs.input_ids != 0)
-            # assigning masked input ids with 103
-            selection = []
-            for i in range(model_inputs.input_ids.shape[0]):
-                selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
-            
-            for i in range(model_inputs.input_ids.shape[0]):
-                model_inputs.input_ids[i, selection[i]] = 103
+            mlm = MLMTokenization(data=self.data, tokenizer=tokenizer)
+            tokenized = mlm()
         else:
             pass # if we decide to fine tune more tasks
             
-        return model_inputs 
+        return tokenized 
 
         
 class UpperClamp():
