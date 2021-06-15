@@ -53,7 +53,7 @@ class PMCDataPipeline(object):
             data_list.append(data[ind]['text']) # list structure: [[[]]] articles -> sections -> sentences
 
         # split into train/test data (split by articles)
-        split_data = split_train_test(data_list)
+        split_data = self.split_train_test(data_list)
 
         if self.use_uncased:
             # output to a file
