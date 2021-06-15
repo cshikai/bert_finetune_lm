@@ -52,30 +52,30 @@ class PMCDataPipeline(object):
             # remove title, and leave only list of sentences in list of sections in list of articles
             data_list.append(data[ind]['text']) # list structure: [[[]]] articles -> sections -> sentences
 
-        # split into train/test data here (split by articles)
-        data_train, data_test = train_test_split(data_list, test_size=0.2, train_size=0.8, shuffle=False)
-        split_data = {'train': data_train, 'test': data_test}
+        # split into train/test data (split by articles)
+        split_data = split_train_test(data_list)
 
-        # need to change this probs
         if self.use_uncased:
             # output to a file
             with open('uncased.json', 'w') as outfile:
                 json.dump(split_data, outfile)
-            # login
-            self.login()
-            # upload file
-            self.uploadfile("uncased.json")
+            # # login
+            # self.login()
+            # # upload file
+            # self.uploadfile("uncased.json")
         else:
             # output to a file
             with open('cased.json', 'w') as outfile:
                 json.dump(split_data, outfile)
-            # login
-            self.login()
-            # upload file
-            self.uploadfile("cased.json")
+            # # login
+            # self.login()
+            # # upload file
+            # self.uploadfile("cased.json")
 
     def split_train_test(self, data):
-        
+        data_train, data_test = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=False)
+        split_data = {'train': data_train, 'test': data_test}
+        return split_data
 
     ## For uploading to grive
     # def login():
