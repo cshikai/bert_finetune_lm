@@ -53,7 +53,7 @@ class PMCDataPipeline(object):
             data_list.append(data[ind]['text']) # list structure: [[[]]] articles -> sections -> sentences
 
         # split into train/test data (split by articles)
-        split_data = self.split_train_test(data_list)
+        split_data = self.split_train_valid_test(data_list)
 
         if self.use_uncased:
             # output to a file
@@ -72,9 +72,10 @@ class PMCDataPipeline(object):
             # # upload file
             # self.uploadfile("cased.json")
 
-    def split_train_test(self, data):
-        data_train, data_test = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=False)
-        split_data = {'train': data_train, 'test': data_test}
+    def split_train_valid_test(self, data):
+        data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=False)
+        data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=False)
+        split_data = {'train': data_train, 'valid': data_valid, 'test': data_test} # ratio is ~70/20/10
         return split_data
 
     ## For uploading to grive
