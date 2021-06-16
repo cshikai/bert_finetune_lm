@@ -19,18 +19,20 @@ class CovidDataset(Dataset):
     """
     Covid_Dataset Object
     """
-
-    def __init__(self, use_uncased:bool, task:str):
+    def __init__(self, use_uncased:bool, task:str, mode:str):
         self.use_uncased = use_uncased
         self.task = task
+        self.mode = mode
         # TODO Change path to load data
         # data would have already been loaded into local drive in the pipeline folder
         if self.use_uncased:
             with open('uncased.json') as f:
-                self.data = json.load(f)
+                all_data = json.load(f)
+                self.data = all_data[self.mode]
         else:
             with open('cased.json') as f:
-                self.data = json.load(f)
+                all_data = json.load(f)
+                self.data = all_data[self.mode]
         
     def __getitem__(self, idx):
         # tokenize data
