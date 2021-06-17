@@ -31,7 +31,7 @@ class BERTModel():
                 self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased')
             else:
                 self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
-        else if (self.task == "MLM"):
+        elif (self.task == "MLM"):
             if (self.use_uncased == True):
                 self.model = BertForMaskedLM.from_pretrained('bert-base-uncased')
             else:
