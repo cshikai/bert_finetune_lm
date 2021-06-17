@@ -15,7 +15,17 @@ from .attention import Attention
 from .id_encoder import IdEncoder
 from . import results
 
+from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
+class BERTModel():
+    def __init__(self, use_uncased:bool, task:str, train_loader, valid_loader):
+        self.use_uncased = use_uncased
+        self.task = task
+        self.train_loader = train_loader
+        self.valid_loader = valid_loader
+    
+    def __call__(self):
+        pass
 
 
 
