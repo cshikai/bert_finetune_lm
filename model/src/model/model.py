@@ -7,6 +7,8 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import pytorch_lightning as pl
 import pandas as pd
+from torch.utils.data import DataLoader
+from transformers import BertForMaskedLM, BertForNextSentencePrediction, AdamW, get_scheduler
 
 from .config import cfg
 from .encoder import Encoder
@@ -23,9 +25,31 @@ class BERTModel():
         self.task = task
         self.train_loader = train_loader
         self.valid_loader = valid_loader
+        # declare model and other stuff like optimizers here
+        if (self.task == "NSP"):
+            if (self.use_uncased == True):
+                self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased')
+            else:
+                self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
+        else if (self.task == "MLM"):
+            if (self.use_uncased == True):
+                self.model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+            else:
+                self.model = BertForMaskedLM.from_pretrained('bert-base-cased')
+        self.optimizer = AdamW(self.model.parameters(), lr=5e-5)
+    
     
     def __call__(self):
         pass
+        # call training loop
+
+    def trainingLoop(self):
+        pass
+        # training loop function
+
+    def evaluationLoop(self):
+        pass
+        # evaluation function
 
 
 
