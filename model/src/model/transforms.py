@@ -9,9 +9,10 @@ import itertools
 import random
 
 class NSPTokenization():
-    def __init__(self, data: list, tokenizer):
+    def __init__(self, data: list, tokenizer, max_length):
         self.data = data # list of lists of sections where each section is a list of sentences
         self.data = tokenizer # either cased or uncased tokenizer
+        self.max_length = max_length
     def __call__(self):
         sentence_a = []
         sentence_b = []
@@ -45,16 +46,17 @@ class NSPTokenization():
                             break
                         
         # tokenize
-        model_inputs = self.tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
+        model_inputs = self.tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         # get labels
         model_inputs['labels'] = torch.LongTensor([labels]).T
         
         return model_inputs 
 
 class MLMTokenization():
-    def __init__(self, data: list, tokenizer):
+    def __init__(self, data: list, tokenizer, max_length):
         self.data = data
         self.tokenizer = tokenizer
+        self.max_length = max_length
     def __call__(self):
         sentence_list = []
         # convert list of articles of sections of sentences to list of sentences
@@ -64,7 +66,7 @@ class MLMTokenization():
                     sentence_list.append(sentence)
         
         # tokenize
-        model_inputs = self.tokenizer(sentence_list, return_tensors='pt', max_length=512, truncation=True, padding='max_length')
+        model_inputs = self.tokenizer(sentence_list, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         # get labels
         model_inputs['labels'] = model_inputs.input_ids.detach().clone()
         ## mask
