@@ -96,12 +96,12 @@ class BERTModel():
 
             logits = outputs.logits
             predictions = torch.argmax(logits, dim=-1)
-            print(logits)
-            print(predictions)
-            print(batch['labels'])
+            # print(logits)
+            # print(predictions)
+            # print(batch['labels'])
             references = torch.reshape(batch['labels'], (-1,))
-            print(references)
-            metric.add_batch(predictions=predictions, references=batch['labels'])
+            # print(references)
+            metric.add_batch(predictions=predictions, references=references)
         score = metric.compute()
         accuracy = score['accuracy']
         # if current epoch's accuracy is higher than the maxAccuracy recorded, replace maxAccuracy and the saved model file
