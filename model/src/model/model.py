@@ -48,14 +48,15 @@ class BERTModel():
         elif (self.round > 1):
             if (self.task == "NSP"):
                 if (self.use_uncased == True):
-                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=self.model_startpoint)
+                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint))
+                    # self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint, map_location='cpu')) #to load on cpu
                 else:
-                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased', state_dict=self.model_startpoint)
+                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased', state_dict=torch.load(self.model_startpoint))
             elif (self.task == "MLM"):
                 if (self.use_uncased == True):
-                    self.model = BertForMaskedLM.from_pretrained('bert-base-uncased', state_dict=self.model_startpoint)
+                    self.model = BertForMaskedLM.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint))
                 else:
-                    self.model = BertForMaskedLM.from_pretrained('bert-base-cased', state_dict=self.model_startpoint)
+                    self.model = BertForMaskedLM.from_pretrained('bert-base-cased', state_dict=torch.load(self.model_startpoint))
         self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
         self.num_training_steps = self.num_epochs * len(self.train_dataloader)
         self.lr_scheduler = get_scheduler('linear', optimizer=self.optimizer, num_warmup_steps=0, num_training_steps=self.num_training_steps)
