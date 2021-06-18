@@ -64,7 +64,7 @@ class BERTModel():
     
     
     def __call__(self):
-        trainingLoop()
+        self.trainingLoop()
 
     def trainingLoop(self):
         self.model.train()
@@ -80,7 +80,7 @@ class BERTModel():
                 self.lr_scheduler.step()
                 self.optimizer.zero_grad()
 
-            evaluate() # evaluate the accuracy of the model for every epoch
+            self.evaluate() # evaluate the accuracy of the model for every epoch
 
     def evaluate(self):
         metric = load_metric('accuracy')
