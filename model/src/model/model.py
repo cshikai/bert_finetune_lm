@@ -30,7 +30,7 @@ class BERTModel():
         self.num_epochs = num_epochs
         # self.batch_size = batch_size
         self.lr = lr
-        self.model_startpoint = model_startpoint
+        self.model_startpoint = "round" + str(round-1) + "_model"
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
         if (self.round == 1):
@@ -64,9 +64,10 @@ class BERTModel():
     
     
     def __call__(self):
-        self.trainingLoop()
+        self.model.to(self.device)
+        self.trainingLoop(round=self.round)
 
-    def trainingLoop(self):
+    def trainingLoop(self, round):
         self.model.train()
         # start training
         for epoch in range(self.num_epochs):
@@ -80,9 +81,10 @@ class BERTModel():
                 self.lr_scheduler.step()
                 self.optimizer.zero_grad()
 
-            self.evaluate() # evaluate the accuracy of the model for every epoch
+            self.evaluate(round=round) # evaluate the accuracy of the model for every epoch
 
-    def evaluate(self):
+    def evaluate(self, round):
+        model_name = "round" + str(round) + "_model"
         metric = load_metric('accuracy')
         self.model.eval()
         # start evaluation of the model using eval data
@@ -99,7 +101,7 @@ class BERTModel():
         # if current epoch's accuracy is higher than the maxAccuracy recorded, replace maxAccuracy and the saved model file
         if (accuracy >= self.maxAccuracy):
             self.maxAccuracy = accuracy
-            torch.save(self.model.state_dict(), 'round1_model')
+            torch.save(self.model.state_dict(), model_name)
         return accuracy
 
 

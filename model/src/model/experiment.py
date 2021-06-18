@@ -17,30 +17,45 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint,LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from .model import Seq2Seq
+from .model import BERTModel, Seq2Seq
 from . import transforms
 from .config import cfg
-from .dataset import FlightDataset
+from .dataset import CovidDataset, FlightDataset
+from datasets import load_metric
 
 
 #TODO: check tensor types
 
 
-def calc_accuracy(output,Y,mask):
-    """
-    Calculate the accuracy (point by point evaluation)
-    :param output: output from the model (tensor)
-    :param Y: ground truth given by dataset (tensor)
-    :param mask: used to mask out the padding (tensor)
-    :return: accuracy used for validation logs (float)
-    """
-    _ , max_indices = torch.max(output.data,1)
-    max_indices = max_indices.view(mask.shape[1], mask.shape[0]).permute(1,0)
-    Y = Y.view(mask.shape[1], mask.shape[0]).permute(1,0)
-    max_indices = torch.masked_select(max_indices, mask)
-    Y = torch.masked_select(Y, mask)
-    train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
-    return train_acc, max_indices, Y
+# def calc_accuracy(output,Y,mask):
+#     """
+#     Calculate the accuracy (point by point evaluation)
+#     :param output: output from the model (tensor)
+#     :param Y: ground truth given by dataset (tensor)
+#     :param mask: used to mask out the padding (tensor)
+#     :return: accuracy used for validation logs (float)
+#     """
+#     _ , max_indices = torch.max(output.data,1)
+#     max_indices = max_indices.view(mask.shape[1], mask.shape[0]).permute(1,0)
+#     Y = Y.view(mask.shape[1], mask.shape[0]).permute(1,0)
+#     max_indices = torch.masked_select(max_indices, mask)
+#     Y = torch.masked_select(Y, mask)
+#     train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
+#     return train_acc, max_indices, Y
+
+def calc_accuracy(model, test_loader, device):
+    metric = load_metric("accuracy")
+    model.eval()
+    ## TODO to follow how model is trained
+    # for batch in test_loader:
+    #     batch = {k: v.to(device) for k, v in batch.items()}
+    #     with torch.no_grad():
+    #         outputs = model(**batch)
+
+    #     logits = outputs.logits
+    #     predictions = torch.argmax(logits, dim=-1)
+    #     metric.add_batch(predictions=predictions, references=batch["labels"])
+
 
 def loss_function(trg, output, mask):
     """
@@ -79,9 +94,6 @@ def default_collate(batch,y_padding_value,mode3_padding_value,callsign_padding_v
 
 
 class Experiment(object):
-
- 
-   
    #should init as arguments here 
     def __init__(self, args, clearml_task=None):
         
@@ -127,6 +139,9 @@ class Experiment(object):
         self.transforms = cfg['data']['transforms']
         self.lr_schedule = cfg['train']['lr_schedule']
 
+        self.use_uncased = args.use_uncased
+        self.task = args.task
+        
 
 
     def _get_logger(self):
@@ -154,8 +169,12 @@ class Experiment(object):
 
         pl.seed_everything(self.seed)
 
-        train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
-        valid_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"valid",self.transforms,self.time_encoding_dims)
+        ##### new #####
+        train_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="train")
+        valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="valid")
+        test_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="test")
+        # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
+        # valid_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"valid",self.transforms,self.time_encoding_dims)
 
         y_padding = train_dataset.labels_map['pad']
         callsign_padding = train_dataset.CALLSIGN_CHAR2IDX['_']
@@ -164,6 +183,11 @@ class Experiment(object):
             batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
         valid_loader = DataLoader(valid_dataset, collate_fn=lambda x: default_collate(x,y_padding,mode3_padding,callsign_padding),\
             batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+
+        ##### new #####
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
 
         class_weights = {
             'label_segment_count': train_dataset.get_class_weights('label_segment_count'),
@@ -190,8 +214,11 @@ class Experiment(object):
                 for key in ['labels','length','track_ids']:
                     metas[meta].pop(key)
                 self.clearml_task.connect_configuration(metas[meta],name='{} Metadata'.format(meta))
- 
 
+        ##### new #####
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device("cpu")
+        model = BERTModel(use_uncased=self.use_uncased, task=self.task, round=self.round, train_dataloader=train_loader, eval_dataloader=valid_loader, 
+        num_epochs=self.n_epochs, lr=self.learning_rate, device=device)
 
         model = Seq2Seq(self.learning_rate, self.lr_schedule, self.hid_dim, self.n_layers, self.n_features,\
             self.enc_dropout, self.dec_dropout, n_mode3_tokens,self.n_mode3_token_embedding, self.n_mode3_token_layers, n_callsign_tokens, self.n_callsign_token_embedding, self.n_callsign_token_layers,\
@@ -215,6 +242,7 @@ class Experiment(object):
             new_lr = lr_finder.suggestion()
             model.learning_rate = new_lr
         trainer.fit(model, train_loader, valid_loader)
+    
     @staticmethod
     def add_experiment_args(parent_parser):
 
