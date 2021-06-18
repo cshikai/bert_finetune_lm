@@ -101,7 +101,7 @@ class BERTModel():
             print(batch['labels'])
             references = torch.reshape(batch['labels'], (-1,))
             print(references)
-            metric.add_batch(predictions=predictions, references=references)
+            metric.add_batch(predictions=predictions, references=batch['labels'])
         score = metric.compute()
         accuracy = score['accuracy']
         # if current epoch's accuracy is higher than the maxAccuracy recorded, replace maxAccuracy and the saved model file
