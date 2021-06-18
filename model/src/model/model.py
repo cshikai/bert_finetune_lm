@@ -30,7 +30,7 @@ class BERTModel():
         self.num_epochs = num_epochs
         # self.batch_size = batch_size
         self.lr = lr
-        self.model_startpoint = "round" + str(round-1) + "_model"
+        self.model_startpoint = "round" + str(self.round-1) + "_model"
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
         if (self.round == 1):
@@ -68,10 +68,10 @@ class BERTModel():
         self.trainingLoop(round=self.round)
         return self.model
 
-    def trainingLoop(self, round):
-        self.model.train()
+    def trainingLoop(self):
         # start training
         for epoch in range(self.num_epochs):
+            self.model.train()
             for batch in self.train_dataloader:
                 batch = {k : v.to(self.device) for k, v in batch.items()}
                 outputs = self.model(**batch)
@@ -82,10 +82,10 @@ class BERTModel():
                 self.lr_scheduler.step()
                 self.optimizer.zero_grad()
 
-            self.evaluate(round=round) # evaluate the accuracy of the model for every epoch
+            self.evaluate() # evaluate the accuracy of the model for every epoch
 
-    def evaluate(self, round):
-        model_name = "round" + str(round) + "_model"
+    def evaluate(self):
+        model_name = "round" + str(self.round) + "_model"
         metric = load_metric('accuracy')
         self.model.eval()
         # start evaluation of the model using eval data
