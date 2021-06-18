@@ -28,7 +28,7 @@ class BERTModel():
         self.train_dataloader = train_dataloader
         self.eval_dataloader = eval_dataloader
         self.num_epochs = num_epochs
-        self.batch_size = batch_size
+        # self.batch_size = batch_size
         self.lr = lr
         self.model_startpoint = model_startpoint
         # declare model and other stuff like optimizers here
