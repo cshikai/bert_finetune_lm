@@ -11,7 +11,7 @@ import random
 class NSPTokenization():
     def __init__(self, data: list, tokenizer, max_length):
         self.data = data # list of lists of sections where each section is a list of sentences
-        self.data = tokenizer # either cased or uncased tokenizer
+        self.tokenizer = tokenizer # either cased or uncased tokenizer
         self.max_length = max_length
     def __call__(self):
         sentence_a = []
@@ -86,10 +86,11 @@ class MLMTokenization():
         return model_inputs
 
 class Tokenization():
-    def __init__(self, data, task: str, use_uncased: bool):
+    def __init__(self, data, task: str, use_uncased: bool, max_length:int):
         self.data = data
         self.task = task
         self.use_uncased = use_uncased
+        self.max_length = max_length
     def __call__(self):
         # define tokenizer
         if self.use_uncased:
@@ -98,10 +99,10 @@ class Tokenization():
             tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         # task
         if self.task == "NSP":
-            nsp = NSPTokenization(data=self.data, tokenizer=tokenizer)
+            nsp = NSPTokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
             tokenized = nsp()
         elif self.task == "MLM":
-            mlm = MLMTokenization(data=self.data, tokenizer=tokenizer)
+            mlm = MLMTokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
             tokenized = mlm()
         else:
             pass # if we decide to fine tune more tasks

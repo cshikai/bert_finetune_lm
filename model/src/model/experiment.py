@@ -24,8 +24,6 @@ from .dataset import CovidDataset, FlightDataset
 from datasets import load_metric
 
 
-#TODO: check tensor types
-
 
 # def calc_accuracy(output,Y,mask):
 #     """
@@ -43,19 +41,13 @@ from datasets import load_metric
 #     train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
 #     return train_acc, max_indices, Y
 
+## TODO
 def calc_accuracy(model, test_loader, device):
     metric = load_metric("accuracy")
     model.eval()
-    ## TODO to follow how model is trained
-    # for batch in test_loader:
-    #     batch = {k: v.to(device) for k, v in batch.items()}
-    #     with torch.no_grad():
-    #         outputs = model(**batch)
-
-    #     logits = outputs.logits
-    #     predictions = torch.argmax(logits, dim=-1)
-    #     metric.add_batch(predictions=predictions, references=batch["labels"])
-
+    all_logits=[]
+    for batch in test_loader:
+        pass
 
 def loss_function(trg, output, mask):
     """
@@ -141,6 +133,7 @@ class Experiment(object):
 
         self.use_uncased = args.use_uncased
         self.task = args.task
+        self.max_length = args.max_length
         
 
 
@@ -170,29 +163,29 @@ class Experiment(object):
         pl.seed_everything(self.seed)
 
         ##### new #####
-        train_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="train")
-        valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="valid")
-        test_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="test")
+        train_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="train", max_length=self.max_length)
+        valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="valid", max_length=self.max_length)
+        test_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="test", max_length=self.max_length)
         # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
         # valid_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"valid",self.transforms,self.time_encoding_dims)
 
-        y_padding = train_dataset.labels_map['pad']
-        callsign_padding = train_dataset.CALLSIGN_CHAR2IDX['_']
-        mode3_padding = train_dataset.MODE3_CHAR2IDX['_']
-        train_loader = DataLoader(train_dataset, collate_fn=lambda x: default_collate(x,y_padding,mode3_padding,callsign_padding),\
-            batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
-        valid_loader = DataLoader(valid_dataset, collate_fn=lambda x: default_collate(x,y_padding,mode3_padding,callsign_padding),\
-            batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        # y_padding = train_dataset.labels_map['pad']
+        # callsign_padding = train_dataset.CALLSIGN_CHAR2IDX['_']
+        # mode3_padding = train_dataset.MODE3_CHAR2IDX['_']
+        # train_loader = DataLoader(train_dataset, collate_fn=lambda x: default_collate(x,y_padding,mode3_padding,callsign_padding),\
+        #     batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+        # valid_loader = DataLoader(valid_dataset, collate_fn=lambda x: default_collate(x,y_padding,mode3_padding,callsign_padding),\
+        #     batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
         ##### new #####
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
 
-        class_weights = {
-            'label_segment_count': train_dataset.get_class_weights('label_segment_count'),
-            'label_point_count': train_dataset.get_class_weights('label_point_count')
-        }
+        # class_weights = {
+        #     'label_segment_count': train_dataset.get_class_weights('label_segment_count'),
+        #     'label_point_count': train_dataset.get_class_weights('label_point_count')
+        # }
         # for batch in train_loader:
         #     print(batch[0].shape)
         #     print(batch[1])
@@ -200,48 +193,49 @@ class Experiment(object):
         #     break
         #-2 for n_class because we have two special tokens
 
-        labels_map = train_dataset.labels_map
-        n_callsign_tokens = len(train_dataset.CALLSIGN_CHAR2IDX)
-        n_mode3_tokens = len(train_dataset.MODE3_CHAR2IDX)
-        n_classes = train_dataset.n_classes
-        distributed = self.n_gpu > 1
-        if self.clearml_task:
-            self.clearml_task.connect_configuration({str(i):val for i,val in enumerate(class_weights[self.weight_by].cpu().numpy())},name='Class Weights')
-            self.clearml_task.connect_configuration(labels_map,name='Labels Map')
+        # labels_map = train_dataset.labels_map
+        # n_callsign_tokens = len(train_dataset.CALLSIGN_CHAR2IDX)
+        # n_mode3_tokens = len(train_dataset.MODE3_CHAR2IDX)
+        # n_classes = train_dataset.n_classes
+        # distributed = self.n_gpu > 1
+        # if self.clearml_task:
+        #     self.clearml_task.connect_configuration({str(i):val for i,val in enumerate(class_weights[self.weight_by].cpu().numpy())},name='Class Weights')
+        #     self.clearml_task.connect_configuration(labels_map,name='Labels Map')
 
-            metas = {'Train':train_dataset.metadata.copy(),'Valid':valid_dataset.metadata.copy()}
-            for meta in metas.keys():
-                for key in ['labels','length','track_ids']:
-                    metas[meta].pop(key)
-                self.clearml_task.connect_configuration(metas[meta],name='{} Metadata'.format(meta))
+        #     metas = {'Train':train_dataset.metadata.copy(),'Valid':valid_dataset.metadata.copy()}
+        #     for meta in metas.keys():
+        #         for key in ['labels','length','track_ids']:
+        #             metas[meta].pop(key)
+        #         self.clearml_task.connect_configuration(metas[meta],name='{} Metadata'.format(meta))
 
         ##### new #####
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device("cpu")
         model = BERTModel(use_uncased=self.use_uncased, task=self.task, round=self.round, train_dataloader=train_loader, eval_dataloader=valid_loader, 
         num_epochs=self.n_epochs, lr=self.learning_rate, device=device)
+        model = model()
 
-        model = Seq2Seq(self.learning_rate, self.lr_schedule, self.hid_dim, self.n_layers, self.n_features,\
-            self.enc_dropout, self.dec_dropout, n_mode3_tokens,self.n_mode3_token_embedding, self.n_mode3_token_layers, n_callsign_tokens, self.n_callsign_token_embedding, self.n_callsign_token_layers,\
-            n_classes ,self.teacher_forcing,class_weights,self.weight_by,\
-            labels_map,distributed)
+        # model = Seq2Seq(self.learning_rate, self.lr_schedule, self.hid_dim, self.n_layers, self.n_features,\
+        #     self.enc_dropout, self.dec_dropout, n_mode3_tokens,self.n_mode3_token_embedding, self.n_mode3_token_layers, n_callsign_tokens, self.n_callsign_token_embedding, self.n_callsign_token_layers,\
+        #     n_classes ,self.teacher_forcing,class_weights,self.weight_by,\
+        #     labels_map,distributed)
         callbacks = self._get_callbacks()
         logger = self._get_logger()
         
-        trainer = pl.Trainer(
-            gpus=self.n_gpu,
-            accelerator=self.accelerator if self.n_gpu > 1 else None,
-            callbacks=callbacks,
-            logger=logger,
-            max_epochs=self.n_epochs,
-            default_root_dir = self.checkpoint_dir,
-            log_every_n_steps=self.log_every_n_steps
-        )
+        # trainer = pl.Trainer(
+        #     gpus=self.n_gpu,
+        #     accelerator=self.accelerator if self.n_gpu > 1 else None,
+        #     callbacks=callbacks,
+        #     logger=logger,
+        #     max_epochs=self.n_epochs,
+        #     default_root_dir = self.checkpoint_dir,
+        #     log_every_n_steps=self.log_every_n_steps
+        # )
 
-        if self.auto_lr:
-            lr_finder = trainer.tuner.lr_find(model,train_loader,valid_loader)
-            new_lr = lr_finder.suggestion()
-            model.learning_rate = new_lr
-        trainer.fit(model, train_loader, valid_loader)
+        # if self.auto_lr:
+        #     lr_finder = trainer.tuner.lr_find(model,train_loader,valid_loader)
+        #     new_lr = lr_finder.suggestion()
+        #     model.learning_rate = new_lr
+        # trainer.fit(model, train_loader, valid_loader)
     
     @staticmethod
     def add_experiment_args(parent_parser):

@@ -19,16 +19,19 @@ class CovidDataset(Dataset):
     """
     Covid_Dataset Object
     """
-    def __init__(self, use_uncased:bool, task:str, mode:str):
+    def __init__(self, use_uncased:bool, task:str, mode:str, max_length:int):
         self.use_uncased = use_uncased
         self.task = task
         self.mode = mode
+        self.max_length = max_length
         # TODO Change path to load data
         # data would have already been loaded into local drive in the pipeline folder
         path = 'uncased.json' if self.use_uncased else 'cased.json'
         with open(path) as f:
             all_data = json.load(f)
             self.data = all_data[self.mode]
+        tokenize = transforms.Tokenization(data=self.data, task=self.task, use_uncased=self.use_uncased, max_length=self.max_length)
+        self.data = tokenize()
         # if self.use_uncased:
         #     with open('uncased.json') as f:
         #         all_data = json.load(f)
@@ -40,10 +43,10 @@ class CovidDataset(Dataset):
         
     def __getitem__(self, idx):
         # tokenize data
-        tokenize = transforms.Tokenization(data=self.data, task=self.task, use_uncased=self.use_uncased)
-        tokenized_data = tokenize()
+        # tokenize = transforms.Tokenization(data=self.data, task=self.task, use_uncased=self.use_uncased, max_length=self.max_length)
+        # tokenized_data = tokenize()
         # return with index
-        return {key: torch.tensor(val[idx]) for key, val in tokenized_data().items()}
+        return {key: torch.tensor(val[idx]) for key, val in self.data.items()}
 
     def __len__(self):
         return len(self.data.input_ids)

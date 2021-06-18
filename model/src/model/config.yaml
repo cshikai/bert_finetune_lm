@@ -47,7 +47,7 @@ data:
 model:
     use_uncased: True
     task: "NSP"
-    sequence_length: 512
+    sequence_length: 256
 
     hidden_layers: 2
     hidden_size: 128

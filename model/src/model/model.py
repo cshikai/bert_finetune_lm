@@ -21,7 +21,7 @@ from . import results
 from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
 class BERTModel():
-    def __init__(self, use_uncased:bool, task:str, round:int, train_dataloader:DataLoader, eval_dataloader:DataLoader, num_epochs:int, lr:float, model_startpoint:str, device):
+    def __init__(self, use_uncased:bool, task:str, round:int, train_dataloader:DataLoader, eval_dataloader:DataLoader, num_epochs:int, lr:float, device):
         self.use_uncased = use_uncased
         self.task = task
         self.round = round
@@ -58,7 +58,7 @@ class BERTModel():
                     self.model = BertForMaskedLM.from_pretrained('bert-base-cased', state_dict=self.model_startpoint)
         self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
         self.num_training_steps = self.num_epochs * len(self.train_dataloader)
-        self.lr_scheduler = get_scheduler('linear', optimizer=self.optimizer, num_warmup_steps=0, num_training_steaps=self.num_training_steps)
+        self.lr_scheduler = get_scheduler('linear', optimizer=self.optimizer, num_warmup_steps=0, num_training_steps=self.num_training_steps)
         self.device = device
         self.maxAccuracy = -1
     
@@ -66,6 +66,7 @@ class BERTModel():
     def __call__(self):
         self.model.to(self.device)
         self.trainingLoop(round=self.round)
+        return self.model
 
     def trainingLoop(self, round):
         self.model.train()
