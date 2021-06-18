@@ -65,7 +65,7 @@ class BERTModel():
     
     def __call__(self):
         self.model.to(self.device)
-        self.trainingLoop(round=self.round)
+        self.trainingLoop()
         return self.model
 
     def trainingLoop(self):
