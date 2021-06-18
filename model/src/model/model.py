@@ -96,6 +96,9 @@ class BERTModel():
 
             logits = outputs.logits
             predictions = torch.argmax(logits, dim=-1)
+            print(logits)
+            print(predictions)
+            print(batch['labels'])
             metric.add_batch(predictions=predictions, references=batch['labels'])
         score = metric.compute()
         accuracy = score['accuracy']
