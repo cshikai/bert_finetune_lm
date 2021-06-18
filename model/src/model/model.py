@@ -9,6 +9,7 @@ import pytorch_lightning as pl
 import pandas as pd
 from torch.utils.data import DataLoader
 from transformers import BertForMaskedLM, BertForNextSentencePrediction, AdamW, get_scheduler
+from datasets import load_metric
 
 from .config import cfg
 from .encoder import Encoder
@@ -20,36 +21,87 @@ from . import results
 from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
 class BERTModel():
-    def __init__(self, use_uncased:bool, task:str, train_loader, valid_loader):
+    def __init__(self, use_uncased:bool, task:str, round:int, train_dataloader:DataLoader, eval_dataloader:DataLoader, num_epochs:int, lr:float, model_startpoint:str, device):
         self.use_uncased = use_uncased
         self.task = task
-        self.train_loader = train_loader
-        self.valid_loader = valid_loader
+        self.round = round
+        self.train_dataloader = train_dataloader
+        self.eval_dataloader = eval_dataloader
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.lr = lr
+        self.model_startpoint = model_startpoint
         # declare model and other stuff like optimizers here
-        if (self.task == "NSP"):
-            if (self.use_uncased == True):
-                self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased')
-            else:
-                self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
-        elif (self.task == "MLM"):
-            if (self.use_uncased == True):
-                self.model = BertForMaskedLM.from_pretrained('bert-base-uncased')
-            else:
-                self.model = BertForMaskedLM.from_pretrained('bert-base-cased')
-        self.optimizer = AdamW(self.model.parameters(), lr=5e-5)
+        # start training the model from fresh pre-trained BERT
+        if (self.round == 1):
+            if (self.task == "NSP"):
+                if (self.use_uncased == True):
+                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased')
+                else:
+                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
+            elif (self.task == "MLM"):
+                if (self.use_uncased == True):
+                    self.model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+                else:
+                    self.model = BertForMaskedLM.from_pretrained('bert-base-cased')
+        # start training the model from previously trained model which was saved
+        elif (self.round > 1):
+            if (self.task == "NSP"):
+                if (self.use_uncased == True):
+                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=self.model_startpoint)
+                else:
+                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased', state_dict=self.model_startpoint)
+            elif (self.task == "MLM"):
+                if (self.use_uncased == True):
+                    self.model = BertForMaskedLM.from_pretrained('bert-base-uncased', state_dict=self.model_startpoint)
+                else:
+                    self.model = BertForMaskedLM.from_pretrained('bert-base-cased', state_dict=self.model_startpoint)
+        self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
+        self.num_training_steps = self.num_epochs * len(self.train_dataloader)
+        self.lr_scheduler = get_scheduler('linear', optimizer=self.optimizer, num_warmup_steps=0, num_training_steaps=self.num_training_steps)
+        self.device = device
+        self.maxAccuracy = -1
     
     
     def __call__(self):
-        pass
-        # call training loop
+        trainingLoop()
 
     def trainingLoop(self):
-        pass
-        # training loop function
+        self.model.train()
+        # start training
+        for epoch in range(self.num_epochs):
+            for batch in self.train_dataloader:
+                batch = {k : v.to(self.device) for k, v in batch.items()}
+                outputs = self.model(**batch)
+                loss = outputs.loss
+                loss.backward()
 
-    def evaluationLoop(self):
-        pass
-        # evaluation function
+                self.optimizer.step()
+                self.lr_scheduler.step()
+                self.optimizer.zero_grad()
+
+            evaluate() # evaluate the accuracy of the model for every epoch
+
+    def evaluate(self):
+        metric = load_metric('accuracy')
+        self.model.eval()
+        # start evaluation of the model using eval data
+        for batch in self.eval_dataloader:
+            batch = {k: v.to(self.device) for k, v in batch.items()}
+            with torch.no_grad():
+                outputs = self.model(**batch)
+
+            logits = outputs.logits
+            predictions = torch.argmax(logits, dim=-1)
+            metric.add_batch(predictions=predictions, references=batch['labels'])
+        score = metric.compute()
+        accuracy = score['accuracy']
+        # if current epoch's accuracy is higher than the maxAccuracy recorded, replace maxAccuracy and the saved model file
+        if (accuracy >= self.maxAccuracy):
+            self.maxAccuracy = accuracy
+            torch.save(self.model.state_dict(), 'round1_model')
+        return accuracy
+
 
 
 
