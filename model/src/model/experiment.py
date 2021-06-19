@@ -13,6 +13,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from transformers import BertForMaskedLM, BertForNextSentencePrediction
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint,LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -20,7 +21,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from .model import BERTModel, Seq2Seq
 from . import transforms
 from .config import cfg
-from .dataset import CovidDataset, FlightDataset
+from .dataset import CovidDataset
 from datasets import load_metric
 
 
@@ -41,13 +42,25 @@ from datasets import load_metric
 #     train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
 #     return train_acc, max_indices, Y
 
-## TODO
+## TODO calc loss
 def calc_accuracy(model, test_loader, device):
-    metric = load_metric("accuracy")
+    metric = load_metric('accuracy')
     model.eval()
-    all_logits=[]
+    # start evaluation of the model using eval data
     for batch in test_loader:
-        pass
+        batch = {k: v.to(device) for k, v in batch.items()}
+        with torch.no_grad():
+            outputs = model(**batch)
+
+        logits = outputs.logits
+        predictions = torch.argmax(logits, dim=-1) 
+        references = torch.reshape(batch['labels'], (-1,))     
+        metric.add_batch(predictions=predictions, references=references)
+    
+    score = metric.compute()
+    accuracy = score['accuracy']
+    return accuracy
+
 
 def loss_function(trg, output, mask):
     """
@@ -87,9 +100,9 @@ def default_collate(batch,y_padding_value,mode3_padding_value,callsign_padding_v
 
 class Experiment(object):
    #should init as arguments here 
-    def __init__(self, args, clearml_task=None):
+    def __init__(self, args):
         
-        self.clearml_task = clearml_task
+        #self.clearml_task = clearml_task
         self.datapath = args.data_path
         self.features = args.data_features
         self.callsign_column = args.data_identifiers_callsign_data_column
@@ -112,7 +125,7 @@ class Experiment(object):
         self.batch_size = args.train_batch_size
         self.learning_rate = args.train_lr
 
-        self.n_epochs = args.train_epochs
+        
         self.auto_lr = args.train_auto_lr
         self.n_gpu = args.train_n_gpu
         self.accelerator = args.train_accelerator
@@ -131,9 +144,9 @@ class Experiment(object):
         self.transforms = cfg['data']['transforms']
         self.lr_schedule = cfg['train']['lr_schedule']
 
-        self.use_uncased = args.use_uncased
-        self.task = args.task
-        self.max_length = args.max_length
+        self.use_uncased = args.model_use_uncased
+        self.max_length = args.model_sequence_length
+        self.n_epochs = args.train_num_epochs
         
 
 
@@ -154,18 +167,18 @@ class Experiment(object):
         callbacks = [checkpoint_callback,lr_logging_callback]
         return callbacks
 
-    def run_experiment(self):
+    def run_experiment(self, task:str, round:int):
         # if os.path.exists(self.checkpoint_dir):
         #     shutil.rmtree(self.checkpoint_dir)
 
         # os.makedirs(os.path.join(self.checkpoint_dir,'logs'), exist_ok=True)
 
-        pl.seed_everything(self.seed)
+        #pl.seed_everything(self.seed)
 
         ##### new #####
-        train_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="train", max_length=self.max_length)
-        valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="valid", max_length=self.max_length)
-        test_dataset = CovidDataset(use_uncased=self.use_uncased, task=self.task, mode="test", max_length=self.max_length)
+        train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length)
+        valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
+        test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
         # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
         # valid_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"valid",self.transforms,self.time_encoding_dims)
 
@@ -210,9 +223,21 @@ class Experiment(object):
 
         ##### new #####
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device("cpu")
-        model = BERTModel(use_uncased=self.use_uncased, task=self.task, round=self.round, train_dataloader=train_loader, eval_dataloader=valid_loader, 
+        model = BERTModel(use_uncased=self.use_uncased, task=task, round=round, train_dataloader=train_loader, eval_dataloader=valid_loader, 
         num_epochs=self.n_epochs, lr=self.learning_rate, device=device)
-        model = model()
+        # Run training and get the model type and case it was training on
+        model_type, model_case = model()
+        # get saved model
+        model_name = "round" + str(round) + "_model"
+        if model_type == "BertForNextSentencePrediction":
+            curr_model = BertForNextSentencePrediction.from_pretrained(model_case, state_dict=torch.load(model_name))
+        elif model_type == "BertForMaskedLM":
+            curr_model = BertForMaskedLM.from_pretrained(model_case, state_dict=torch.load(model_name))
+        
+        # calc accuracy on test data
+        calc_accuracy(model=curr_model, test_loader=test_loader, device=device)
+
+        
 
         # model = Seq2Seq(self.learning_rate, self.lr_schedule, self.hid_dim, self.n_layers, self.n_features,\
         #     self.enc_dropout, self.dec_dropout, n_mode3_tokens,self.n_mode3_token_embedding, self.n_mode3_token_layers, n_callsign_tokens, self.n_callsign_token_embedding, self.n_callsign_token_layers,\

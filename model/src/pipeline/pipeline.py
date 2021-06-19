@@ -54,7 +54,7 @@ class PMCDataPipeline(object):
 
         if self.use_uncased:
             # output to a file
-            with open('uncased.json', 'w') as outfile:
+            with open('pipeline/uncased.json', 'w') as outfile:
                 json.dump(split_data, outfile)
             # # login
             # self.login()
@@ -62,7 +62,7 @@ class PMCDataPipeline(object):
             # self.uploadfile("uncased.json")
         else:
             # output to a file
-            with open('cased.json', 'w') as outfile:
+            with open('pipeline/cased.json', 'w') as outfile:
                 json.dump(split_data, outfile)
             # # login
             # self.login()

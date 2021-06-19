@@ -67,7 +67,7 @@ train:
     accelerator: 'ddp'
     seed: 123
     #epochs: 40
-    batch_size: 32
+    batch_size: 8
     lr: 0.001 # change
     auto_lr: False
     lr_schedule:

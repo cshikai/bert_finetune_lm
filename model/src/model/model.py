@@ -31,43 +31,36 @@ class BERTModel():
         # self.batch_size = batch_size
         self.lr = lr
         self.model_startpoint = "round" + str(self.round-1) + "_model"
+        self.bert_case_uncase = 'bert-base-uncased' if self.use_uncased else 'bert-base-cased'
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
         if (self.round == 1):
             if (self.task == "NSP"):
-                if (self.use_uncased == True):
-                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased')
-                else:
-                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
+                self.model_type = "BertForNextSentencePrediction"
+                self.model = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase)
             elif (self.task == "MLM"):
-                if (self.use_uncased == True):
-                    self.model = BertForMaskedLM.from_pretrained('bert-base-uncased')
-                else:
-                    self.model = BertForMaskedLM.from_pretrained('bert-base-cased')
+                self.model_type = "BertForMaskedLM"
+                self.model = BertForMaskedLM.from_pretrained(self.bert_case_uncase)
         # start training the model from previously trained model which was saved
         elif (self.round > 1):
             if (self.task == "NSP"):
-                if (self.use_uncased == True):
-                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint))
+                self.model_type = "BertForNextSentencePrediction"
+                self.model = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
                     # self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint, map_location='cpu')) #to load on cpu
-                else:
-                    self.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased', state_dict=torch.load(self.model_startpoint))
             elif (self.task == "MLM"):
-                if (self.use_uncased == True):
-                    self.model = BertForMaskedLM.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint))
-                else:
-                    self.model = BertForMaskedLM.from_pretrained('bert-base-cased', state_dict=torch.load(self.model_startpoint))
+                self.model_type = "BertForMaskedLM"
+                self.model = BertForMaskedLM.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+
         self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
         self.num_training_steps = self.num_epochs * len(self.train_dataloader)
         self.lr_scheduler = get_scheduler('linear', optimizer=self.optimizer, num_warmup_steps=0, num_training_steps=self.num_training_steps)
         self.device = device
         self.maxAccuracy = -1
     
-    
     def __call__(self):
         self.model.to(self.device)
         self.trainingLoop()
-        return self.model
+        return self.model_type, self.bert_case_uncase
 
     def trainingLoop(self):
         # start training
