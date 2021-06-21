@@ -20,7 +20,7 @@ from . import results
 
 from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
-class BERTModel():
+class BERTModel(pl.LightningModule):
     def __init__(self, use_uncased:bool, task:str, round:int, train_dataloader:DataLoader, eval_dataloader:DataLoader, num_epochs:int, lr:float, device):
         self.use_uncased = use_uncased
         self.task = task
@@ -57,6 +57,30 @@ class BERTModel():
         self.device = device
         self.maxAccuracy = -1
     
+    def forward(self, batch):
+        # the outputs = self.model(**batch) lines (basically getting the output of the model when forward propagating)
+        pass
+
+    def training_step(self):
+        # calls forward
+        # decide what happens to one batch of data here
+        pass
+
+    def validation_step(self):
+        # our evaluate function but for one batch and without the code to decide best epoch
+        pass
+
+    
+
+    def calculate_accuracy(self):
+        # metric for NSP
+        pass
+
+    def calculate_perplexity(self):
+        # metric for MLM
+        pass
+
+    # dont need call function anymore bc got forward())
     def __call__(self):
         self.model.to(self.device)
         self.trainingLoop()
