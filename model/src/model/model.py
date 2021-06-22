@@ -57,18 +57,70 @@ class BERTModel(pl.LightningModule):
         self.device = device
         self.maxAccuracy = -1
     
-    def forward(self, batch):
-        # the outputs = self.model(**batch) lines (basically getting the output of the model when forward propagating)
-        pass
+    def forward(self, input_ids, attention_mask, labels):
+        """
+        Forward propagation of one batch.
+        """
+        output = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        
+        return output #not sure what to return...
 
-    def training_step(self):
-        # calls forward
+    def training_step(self, batch, batch_idx):
+        """
+        Pytorch lightning training step.
+        """
+        # calls forward, loss function, accuracy function, perplexity function
         # decide what happens to one batch of data here
-        pass
+        input_ids = batch['input_ids']
+        attention_mask = batch['attention_mask']
+        labels = batch['labels']
+        self.model.train() #idk if this is necessary?
 
-    def validation_step(self):
+        # call forward
+        output = self(input_ids, attention_mask, labels)
+        loss = output.loss
+        accuracy = self.calculate_accuracy() #idk what parameters to pass in here
+        perplexity = self.calculate_perplexity() #idk what paras to pass in here
+
+        # log metrices
+        self.log('train_loss', loss, sync_dist=self.distributed)
+        self.log('train_acc', accuracy, sync_dist=self.distributed)
+        self.log('train_perplex', perplexity, sync_dist=self.distributed)
+        
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        """
+        Pytorch lightning validation step.
+        """
         # our evaluate function but for one batch and without the code to decide best epoch
-        pass
+        input_ids = batch['input_ids']
+        attention_mask = batch['attention_mask']
+        labels = batch['labels']
+        self.model.eval() #idk if this is necessary?
+
+        # call forward
+        output = self(input_ids, attention_mask, labels)
+        loss = output.loss
+        accuracy = self.calculate_accuracy() #idk what parameters to pass in here
+        perplexity = self.calculate_perplexity() #idk what paras to pass in here
+        _, max_indices = torch.max(output,1) #idk if we need this
+
+        # log metrices
+        self.log('val_loss', loss, sync_dist=self.distributed)
+        self.log('val_acc', accuracy, sync_dist=self.distributed)
+        self.log('val_perplex', perplexity, sync_dist=self.distributed)
+
+        return {
+            'val_loss': loss,
+            'val_acc': accuracy,
+            'val_perplex': perplexity,
+            # 'labels':y,
+            # 'predictions':max_indices,
+            # 'confidence':confidence,
+            # 'seg_labels': seg_y,
+            # 'seg_predictions': seg_pred
+            }
 
     
 
