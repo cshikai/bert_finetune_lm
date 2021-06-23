@@ -21,41 +21,43 @@ from . import results
 from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
 class BERTModel(pl.LightningModule):
-    def __init__(self, use_uncased:bool, task:str, round:int, train_dataloader:DataLoader, eval_dataloader:DataLoader, num_epochs:int, lr:float, device):
+    def __init__(self, use_uncased:bool, task:str, round:int, lr:float, num_training_steps, num_warmup_steps):
+        super().__init__()
         self.use_uncased = use_uncased
         self.task = task
         self.round = round
-        self.train_dataloader = train_dataloader
-        self.eval_dataloader = eval_dataloader
-        self.num_epochs = num_epochs
+        # self.train_dataloader = train_dataloader
+        # self.eval_dataloader = eval_dataloader
+        # self.num_epochs = num_epochs
         # self.batch_size = batch_size
-        self.lr = lr
+        
         self.model_startpoint = "round" + str(self.round-1) + "_model"
         self.bert_case_uncase = 'bert-base-uncased' if self.use_uncased else 'bert-base-cased'
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
         if (self.round == 1):
             if (self.task == "NSP"):
-                self.model_type = "BertForNextSentencePrediction"
-                self.model = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase)
+                self.bert = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase)
             elif (self.task == "MLM"):
-                self.model_type = "BertForMaskedLM"
-                self.model = BertForMaskedLM.from_pretrained(self.bert_case_uncase)
+                self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase)
         # start training the model from previously trained model which was saved
         elif (self.round > 1):
             if (self.task == "NSP"):
-                self.model_type = "BertForNextSentencePrediction"
-                self.model = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+                self.bert = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
                     # self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint, map_location='cpu')) #to load on cpu
             elif (self.task == "MLM"):
-                self.model_type = "BertForMaskedLM"
-                self.model = BertForMaskedLM.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+                self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
 
-        self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
-        self.num_training_steps = self.num_epochs * len(self.train_dataloader)
-        self.lr_scheduler = get_scheduler('linear', optimizer=self.optimizer, num_warmup_steps=0, num_training_steps=self.num_training_steps)
-        self.device = device
-        self.maxAccuracy = -1
+        # self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
+        # self.num_training_steps = self.num_epochs * len(self.train_dataloader)
+        # self.lr_scheduler = get_scheduler('linear', optimizer=self.optimizer, num_warmup_steps=0, num_training_steps=self.num_training_steps)
+        # self.maxAccuracy = -1
+
+        self.lr = lr
+        self.num_training_steps = num_training_steps
+        self.num_warmup_steps = num_warmup_steps
+
+
     
     def forward(self, batch):
         # the outputs = self.model(**batch) lines (basically getting the output of the model when forward propagating)
@@ -70,9 +72,14 @@ class BERTModel(pl.LightningModule):
         # our evaluate function but for one batch and without the code to decide best epoch
         pass
 
-    
+    def configure_optimizers(self):
+        optimizer = AdamW(self.parameters(), lr=self.lr)
+        scheduler = get_scheduler('linear', optimizer=optimizer, num_warmup_steps=self.num_warmup_steps, num_training_steps=self.num_training_steps)
+
+        return dict(optimizer=optimizer, lr_scheduler=dict(scheduler=scheduler, interval='step'))
 
     def calculate_accuracy(self):
+        
         # metric for NSP
         pass
 
@@ -80,53 +87,53 @@ class BERTModel(pl.LightningModule):
         # metric for MLM
         pass
 
-    # dont need call function anymore bc got forward())
-    def __call__(self):
-        self.model.to(self.device)
-        self.trainingLoop()
-        return self.model_type, self.bert_case_uncase
+    # # dont need call function anymore bc got forward())
+    # def __call__(self):
+    #     self.model.to(self.device)
+    #     self.trainingLoop()
+    #     return self.model_type, self.bert_case_uncase
 
-    def trainingLoop(self):
-        # start training
-        for epoch in range(self.num_epochs):
-            self.model.train()
-            for batch in self.train_dataloader:
-                batch = {k : v.to(self.device) for k, v in batch.items()}
-                outputs = self.model(**batch)
-                loss = outputs.loss
-                loss.backward()
+    # def trainingLoop(self):
+    #     # start training
+    #     for epoch in range(self.num_epochs):
+    #         self.model.train()
+    #         for batch in self.train_dataloader:
+    #             batch = {k : v.to(self.device) for k, v in batch.items()}
+    #             outputs = self.model(**batch)
+    #             loss = outputs.loss
+    #             loss.backward()
 
-                self.optimizer.step()
-                self.lr_scheduler.step()
-                self.optimizer.zero_grad()
+    #             self.optimizer.step()
+    #             self.lr_scheduler.step()
+    #             self.optimizer.zero_grad()
 
-            self.evaluate() # evaluate the accuracy of the model for every epoch
+    #         self.evaluate() # evaluate the accuracy of the model for every epoch
 
-    def evaluate(self):
-        model_name = "round" + str(self.round) + "_model"
-        metric = load_metric('accuracy')
-        self.model.eval()
-        # start evaluation of the model using eval data
-        for batch in self.eval_dataloader:
-            batch = {k: v.to(self.device) for k, v in batch.items()}
-            with torch.no_grad():
-                outputs = self.model(**batch)
+    # def evaluate(self):
+    #     model_name = "round" + str(self.round) + "_model"
+    #     metric = load_metric('accuracy')
+    #     self.model.eval()
+    #     # start evaluation of the model using eval data
+    #     for batch in self.eval_dataloader:
+    #         batch = {k: v.to(self.device) for k, v in batch.items()}
+    #         with torch.no_grad():
+    #             outputs = self.model(**batch)
 
-            logits = outputs.logits
-            predictions = torch.argmax(logits, dim=-1)
-            # print(logits)
-            # print(predictions)
-            # print(batch['labels'])
-            references = torch.reshape(batch['labels'], (-1,))
-            # print(references)
-            metric.add_batch(predictions=predictions, references=references)
-        score = metric.compute()
-        accuracy = score['accuracy']
-        # if current epoch's accuracy is higher than the maxAccuracy recorded, replace maxAccuracy and the saved model file
-        if (accuracy >= self.maxAccuracy):
-            self.maxAccuracy = accuracy
-            torch.save(self.model.state_dict(), model_name)
-        return accuracy
+    #         logits = outputs.logits
+    #         predictions = torch.argmax(logits, dim=-1)
+    #         # print(logits)
+    #         # print(predictions)
+    #         # print(batch['labels'])
+    #         references = torch.reshape(batch['labels'], (-1,))
+    #         # print(references)
+    #         metric.add_batch(predictions=predictions, references=references)
+    #     score = metric.compute()
+    #     accuracy = score['accuracy']
+    #     # if current epoch's accuracy is higher than the maxAccuracy recorded, replace maxAccuracy and the saved model file
+    #     if (accuracy >= self.maxAccuracy):
+    #         self.maxAccuracy = accuracy
+    #         torch.save(self.model.state_dict(), model_name)
+    #     return accuracy
 
 
 

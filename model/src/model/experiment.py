@@ -26,40 +26,40 @@ from datasets import load_metric
 
 
 
-# def calc_accuracy(output,Y,mask):
-#     """
-#     Calculate the accuracy (point by point evaluation)
-#     :param output: output from the model (tensor)
-#     :param Y: ground truth given by dataset (tensor)
-#     :param mask: used to mask out the padding (tensor)
-#     :return: accuracy used for validation logs (float)
-#     """
-#     _ , max_indices = torch.max(output.data,1)
-#     max_indices = max_indices.view(mask.shape[1], mask.shape[0]).permute(1,0)
-#     Y = Y.view(mask.shape[1], mask.shape[0]).permute(1,0)
-#     max_indices = torch.masked_select(max_indices, mask)
-#     Y = torch.masked_select(Y, mask)
-#     train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
-#     return train_acc, max_indices, Y
+def calc_accuracy(output,Y,mask):
+    """
+    Calculate the accuracy (point by point evaluation)
+    :param output: output from the model (tensor)
+    :param Y: ground truth given by dataset (tensor)
+    :param mask: used to mask out the padding (tensor)
+    :return: accuracy used for validation logs (float)
+    """
+    _ , max_indices = torch.max(output.data,1)
+    max_indices = max_indices.view(mask.shape[1], mask.shape[0]).permute(1,0)
+    Y = Y.view(mask.shape[1], mask.shape[0]).permute(1,0)
+    max_indices = torch.masked_select(max_indices, mask)
+    Y = torch.masked_select(Y, mask)
+    train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
+    return train_acc, max_indices, Y
 
-## TODO calc loss
-def calc_accuracy(model, test_loader, device):
-    metric = load_metric('accuracy')
-    model.eval()
-    # start evaluation of the model using eval data
-    for batch in test_loader:
-        batch = {k: v.to(device) for k, v in batch.items()}
-        with torch.no_grad():
-            outputs = model(**batch)
+# ## TODO calc loss
+# def calc_accuracy(model, test_loader, device):
+#     metric = load_metric('accuracy')
+#     model.eval()
+#     # start evaluation of the model using eval data
+#     for batch in test_loader:
+#         batch = {k: v.to(device) for k, v in batch.items()}
+#         with torch.no_grad():
+#             outputs = model(**batch)
 
-        logits = outputs.logits
-        predictions = torch.argmax(logits, dim=-1) 
-        references = torch.reshape(batch['labels'], (-1,))     
-        metric.add_batch(predictions=predictions, references=references)
+#         logits = outputs.logits
+#         predictions = torch.argmax(logits, dim=-1) 
+#         references = torch.reshape(batch['labels'], (-1,))     
+#         metric.add_batch(predictions=predictions, references=references)
     
-    score = metric.compute()
-    accuracy = score['accuracy']
-    return accuracy
+#     score = metric.compute()
+#     accuracy = score['accuracy']
+#     return accuracy
 
 
 def loss_function(trg, output, mask):
@@ -173,12 +173,42 @@ class Experiment(object):
 
         # os.makedirs(os.path.join(self.checkpoint_dir,'logs'), exist_ok=True)
 
-        #pl.seed_everything(self.seed)
+        pl.seed_everything(self.seed)
 
         ##### new #####
         train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length)
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
+
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
+
+        total_training_steps = self.n_epochs*self.batch_size
+        # take a fifth of training steps for warmup
+        warmup_steps = total_training_steps//5
+        model = BERTModel(use_uncased=self.use_uncased, task=task, round=round, lr=self.learning_rate, num_training_steps=total_training_steps, num_warmup_steps=warmup_steps)
+
+        callbacks = self._get_callbacks()
+        logger = self._get_logger()
+        
+        trainer = pl.Trainer(
+            gpus=self.n_gpu,
+            accelerator=self.accelerator if self.n_gpu > 1 else None,
+            callbacks=callbacks,
+            logger=logger,
+            max_epochs=self.n_epochs,
+            default_root_dir = self.checkpoint_dir,
+            log_every_n_steps=self.log_every_n_steps
+        )
+
+        if self.auto_lr:
+            lr_finder = trainer.tuner.lr_find(model,train_loader,valid_loader)
+            new_lr = lr_finder.suggestion()
+            model.learning_rate = new_lr
+        
+        trainer.fit(model, train_loader, valid_loader)
+
         # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
         # valid_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"valid",self.transforms,self.time_encoding_dims)
 
@@ -190,10 +220,7 @@ class Experiment(object):
         # valid_loader = DataLoader(valid_dataset, collate_fn=lambda x: default_collate(x,y_padding,mode3_padding,callsign_padding),\
         #     batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
-        ##### new #####
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=True)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
+        
 
         # class_weights = {
         #     'label_segment_count': train_dataset.get_class_weights('label_segment_count'),
@@ -204,7 +231,7 @@ class Experiment(object):
         #     print(batch[1])
         #     # print(batch[2])
         #     break
-        #-2 for n_class because we have two special tokens
+        # -2 for n_class because we have two special tokens
 
         # labels_map = train_dataset.labels_map
         # n_callsign_tokens = len(train_dataset.CALLSIGN_CHAR2IDX)
@@ -221,21 +248,18 @@ class Experiment(object):
         #             metas[meta].pop(key)
         #         self.clearml_task.connect_configuration(metas[meta],name='{} Metadata'.format(meta))
 
-        ##### new #####
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device("cpu")
-        model = BERTModel(use_uncased=self.use_uncased, task=task, round=round, train_dataloader=train_loader, eval_dataloader=valid_loader, 
-        num_epochs=self.n_epochs, lr=self.learning_rate, device=device)
-        # Run training and get the model type and case it was training on
-        model_type, model_case = model()
-        # get saved model
-        model_name = "round" + str(round) + "_model"
-        if model_type == "BertForNextSentencePrediction":
-            curr_model = BertForNextSentencePrediction.from_pretrained(model_case, state_dict=torch.load(model_name))
-        elif model_type == "BertForMaskedLM":
-            curr_model = BertForMaskedLM.from_pretrained(model_case, state_dict=torch.load(model_name))
         
-        # calc accuracy on test data
-        calc_accuracy(model=curr_model, test_loader=test_loader, device=device)
+        # Run training and get the model type and case it was training on
+        # model_type, model_case = model()
+        # # get saved model
+        # model_name = "round" + str(round) + "_model"
+        # if model_type == "BertForNextSentencePrediction":
+        #     curr_model = BertForNextSentencePrediction.from_pretrained(model_case, state_dict=torch.load(model_name))
+        # elif model_type == "BertForMaskedLM":
+        #     curr_model = BertForMaskedLM.from_pretrained(model_case, state_dict=torch.load(model_name))
+        
+        # # calc accuracy on test data
+        # calc_accuracy(model=curr_model, test_loader=test_loader, device=device)
 
         
 
@@ -243,24 +267,8 @@ class Experiment(object):
         #     self.enc_dropout, self.dec_dropout, n_mode3_tokens,self.n_mode3_token_embedding, self.n_mode3_token_layers, n_callsign_tokens, self.n_callsign_token_embedding, self.n_callsign_token_layers,\
         #     n_classes ,self.teacher_forcing,class_weights,self.weight_by,\
         #     labels_map,distributed)
-        callbacks = self._get_callbacks()
-        logger = self._get_logger()
+       
         
-        # trainer = pl.Trainer(
-        #     gpus=self.n_gpu,
-        #     accelerator=self.accelerator if self.n_gpu > 1 else None,
-        #     callbacks=callbacks,
-        #     logger=logger,
-        #     max_epochs=self.n_epochs,
-        #     default_root_dir = self.checkpoint_dir,
-        #     log_every_n_steps=self.log_every_n_steps
-        # )
-
-        # if self.auto_lr:
-        #     lr_finder = trainer.tuner.lr_find(model,train_loader,valid_loader)
-        #     new_lr = lr_finder.suggestion()
-        #     model.learning_rate = new_lr
-        # trainer.fit(model, train_loader, valid_loader)
     
     @staticmethod
     def add_experiment_args(parent_parser):
