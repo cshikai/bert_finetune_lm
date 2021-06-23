@@ -37,7 +37,8 @@ if __name__ == '__main__':
     # #run pipeline to extract data from raw data
     # annotated_data_pipe()
 
-    PMC_data_pipe = pipeline.PMCDataPipeline(args.pipeline_use_uncased)
+    PMC_data_pipe = pipeline.PMCDataPipeline(args)
+    PMC_data_pipe()
 
     
 
@@ -47,7 +48,7 @@ if __name__ == '__main__':
     
     exp = experiment.Experiment(args)
     exp.run_experiment(task='NSP', round=1)
-    # exp.run_experiment(Task='MLM', round=2)
+    exp.run_experiment(Task='MLM', round=2)
 
 
 

@@ -10,22 +10,20 @@ from sklearn.model_selection import train_test_split
 import argparse
 import nltk
 import gdown
-from pydrive.drive import GoogleDrive
-from pydrive.auth import GoogleAuth
 import unidecode 
 
 
 class PMCDataPipeline(object):
 
-    def __init__(self):
-        self.use_uncased = cfg['use_uncased'] # TODO not so sure about this, need to double check
+    def __init__(self, args):
+        self.use_uncased = args.pipeline_use_uncased 
     def __call__(self):
         nltk.download('all')
         sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
         # Download cleaned data from gdrive
         raw_url = 'https://drive.google.com/uc?id=1yUVHF8Lzvi9gY3YNMjM-n7hlJR7SaG7A'
-        output = 'data_to_preprocess.json' # TODO check where to download data to
+        output = 'data_to_preprocess.json' 
         gdown.download(raw_url, output, quiet=False)
         with open(output) as f:
             data = json.load(f)
@@ -52,44 +50,16 @@ class PMCDataPipeline(object):
         # split into train/test data (split by articles)
         split_data = self.split_train_valid_test(data_list)
 
-        if self.use_uncased:
-            # output to a file
-            with open('pipeline/uncased.json', 'w') as outfile:
-                json.dump(split_data, outfile)
-            # # login
-            # self.login()
-            # # upload file
-            # self.uploadfile("uncased.json")
-        else:
-            # output to a file
-            with open('pipeline/cased.json', 'w') as outfile:
-                json.dump(split_data, outfile)
-            # # login
-            # self.login()
-            # # upload file
-            # self.uploadfile("cased.json")
+        #output to file
+        path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
+        with open(path, 'w') as outfile:
+            json.dump(split_data, outfile)
 
     def split_train_valid_test(self, data):
         data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=False)
         data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=False)
         split_data = {'train': data_train, 'valid': data_valid, 'test': data_test} # ratio is ~70/20/10
         return split_data
-
-    ## For uploading to grive
-    # def login():
-    #     global gauth, drive
-    #     gauth = GoogleAuth()
-    #     # Creates local webserver and auto handles authentication
-    #     gauth.LocalWebserverAuth() 
-    #     drive = GoogleDrive(gauth) 
-
-    # def uploadfile(filename):
-    #     # Get parent folder    
-    #     gfile = drive.CreateFile({'parents': [{'id': '1dxQeB6hVfvSIFUy64L1bnX668ehgX5nC'}]})
-    #     # Read file and set it as the content of this instance
-    #     gfile.SetContentFile(filename)
-    #     # Upload the file
-    #     gfile.Upload() 
 
     @staticmethod
     def add_pipeline_args(parent_parser):
