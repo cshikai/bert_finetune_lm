@@ -104,7 +104,7 @@ class BERTModel(pl.LightningModule):
         loss = output.loss
         accuracy = self.calculate_accuracy() #idk what parameters to pass in here
         perplexity = self.calculate_perplexity() #idk what paras to pass in here
-        _, max_indices = torch.max(output,1) #idk if we need this
+        # _, max_indices = torch.max(output,1) #idk if we need this
 
         # log metrices
         self.log('val_loss', loss, sync_dist=self.distributed)
