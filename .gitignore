@@ -13,3 +13,6 @@ deploy/
 
 .vscode/settings.json
 model/.vscode/settings.json
+model/src/pipeline/cased.json
+.gitignore
+model/src/pipeline/uncased.json
