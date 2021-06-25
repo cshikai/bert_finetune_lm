@@ -42,26 +42,6 @@ def calc_accuracy(output,Y,mask):
     train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
     return train_acc, max_indices, Y
 
-# ## TODO calc loss
-# def calc_accuracy(model, test_loader, device):
-#     metric = load_metric('accuracy')
-#     model.eval()
-#     # start evaluation of the model using eval data
-#     for batch in test_loader:
-#         batch = {k: v.to(device) for k, v in batch.items()}
-#         with torch.no_grad():
-#             outputs = model(**batch)
-
-#         logits = outputs.logits
-#         predictions = torch.argmax(logits, dim=-1) 
-#         references = torch.reshape(batch['labels'], (-1,))     
-#         metric.add_batch(predictions=predictions, references=references)
-    
-#     score = metric.compute()
-#     accuracy = score['accuracy']
-#     return accuracy
-
-
 def loss_function(trg, output, mask):
     """
     Calculate the loss (point by point evaluation)
@@ -100,9 +80,9 @@ def default_collate(batch,y_padding_value,mode3_padding_value,callsign_padding_v
 
 class Experiment(object):
    #should init as arguments here 
-    def __init__(self, args):
+    def __init__(self, args, clearml_task=None):
         
-        #self.clearml_task = clearml_task
+        self.clearml_task = clearml_task
         self.datapath = args.data_path
         self.features = args.data_features
         self.callsign_column = args.data_identifiers_callsign_data_column

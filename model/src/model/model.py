@@ -10,6 +10,8 @@ import pandas as pd
 from torch.utils.data import DataLoader
 from transformers import BertForMaskedLM, BertForNextSentencePrediction, AdamW, get_scheduler
 from datasets import load_metric
+from torchmetrics import Accuracy
+import torch.nn.functional as F
 
 from .config import cfg
 from .encoder import Encoder
@@ -56,7 +58,9 @@ class BERTModel(pl.LightningModule):
         self.lr = lr
         self.num_training_steps = num_training_steps
         self.num_warmup_steps = num_warmup_steps
-
+        
+        #loss
+        self.criterion = nn.CrossEntropyLoss
 
     
     def forward(self, input_ids, attention_mask, labels):
@@ -130,14 +134,16 @@ class BERTModel(pl.LightningModule):
 
         return dict(optimizer=optimizer, lr_scheduler=dict(scheduler=scheduler, interval='step'))
 
-    def calculate_accuracy(self):
+    # metric for NSP
+    def calculate_accuracy(self, output, target):
+        accuracy = Accuracy()
+        return accuracy(output, target)
         
-        # metric for NSP
-        pass
-
-    def calculate_perplexity(self):
-        # metric for MLM
-        pass
+    # metric for MLM
+    def calculate_perplexity(self, output, target):
+        loss = self.criterion(output, target)
+        perplexity = torch.exp(loss)
+        return perplexity
 
     # # dont need call function anymore bc got forward())
     # def __call__(self):
