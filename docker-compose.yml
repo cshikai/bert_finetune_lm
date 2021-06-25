@@ -1,7 +1,10 @@
 version: '3.4'
 
 services:
-  model: 
+  model:
+    runtime: nvidia
+    # command: nvidia-smi
+
     build: ./model 
     # image: 
     stdin_open: true
