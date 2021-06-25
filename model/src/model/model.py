@@ -110,10 +110,10 @@ class BERTModel(pl.LightningModule):
         # call forward
         output = self(input_ids, attention_mask, labels)
         loss = output.loss
-        predictions = torch.argmax(output.logits, dim=-1)
-        actual = torch.reshape(labels, (-1,))
-        accuracy = self.calculate_accuracy(predictions, actual) #not sure about the paras
-        perplexity = self.calculate_perplexity(predictions, actual) #not sure about the paras
+        NSPpredictions = torch.argmax(output.logits, dim=-1)
+        NSPactual = torch.reshape(labels, (-1,))
+        accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
+        perplexity = self.calculate_perplexity(output.logits, labels) #not sure about the paras
         # _, max_indices = torch.max(output,1) #idk if we need this
 
         # log metrices
