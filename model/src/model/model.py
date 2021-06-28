@@ -23,15 +23,17 @@ from . import results
 from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
 class BERTModel(pl.LightningModule):
-    def __init__(self, use_uncased:bool, task:str, round:int, lr:float, num_training_steps, num_warmup_steps, distributed):
+    def __init__(self, use_uncased:bool, task:str, round:int, lr:float, num_training_steps, num_warmup_steps, batch_size: int, seq_length: int, distributed: bool):
         super().__init__()
         self.use_uncased = use_uncased
         self.task = task.upper()
         self.round = round
+        self.batch_size = batch_size
+        self.seq_length = seq_length
         # self.train_dataloader = train_dataloader
         # self.eval_dataloader = eval_dataloader
         # self.num_epochs = num_epochs
-        # self.batch_size = batch_size
+        
         
         self.model_startpoint = "round" + str(self.round-1) + "_model"
         self.bert_case_uncase = 'bert-base-uncased' if self.use_uncased else 'bert-base-cased'
@@ -95,8 +97,24 @@ class BERTModel(pl.LightningModule):
             NSPactual = torch.reshape(labels, (-1,))
             accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
             self.log('train_acc', accuracy, sync_dist=self.distributed)
+            # print("NSPpredictions: ", NSPpredictions)
+            # print("NSPactual: ", NSPactual)
+            # print("train accuracy: ", accuracy)
         elif (self.task == "MLM"):
-            perplexity = self.calculate_perplexity(output.logits, labels) #not sure about the paras
+            # print("train output.logits: ", output.logits.shape)
+            # print("train output.logits: ", output.logits)
+            # print("train labels: ", labels.shape)
+            # print("train labels: ", labels)
+            # MLMinput = output.logits[:, -1, :]
+            MLMinput = torch.reshape(output.logits, (self.batch_size*self.seq_length, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
+            # print("train MLMinput: ", MLMinput.shape)
+            # print("train MLMinpit: ", MLMinput)
+            MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
+            # print("train MLMtarget: ", MLMtarget.shape)
+            # print("train MLMactual: ", MLMtarget)
+            perplexity = self.calculate_perplexity(MLMinput, MLMtarget) #TODO check if paras are okay, esp after reshaping them
+            print("train perplex: ", perplexity)
+            # perplexity = self.calculate_perplexity(output.logits, labels) #not sure about the paras
             self.log('train_perplex', perplexity, sync_dist=self.distributed)
         
         return {"loss": loss, "predictions": output, "labels": labels}
@@ -122,7 +140,19 @@ class BERTModel(pl.LightningModule):
             accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
             self.log('val_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
-            perplexity = self.calculate_perplexity(output, labels) #not sure about the paras
+            # print("val output.logits: ", output.logits.shape)
+            # print("val output.logits: ", output.logits)
+            # print("val labels: ", labels.shape)
+            # print("val labels: ", labels)
+            # MLMinput = output.logits[:, -1, :]
+            MLMinput = torch.reshape(output.logits, (self.batch_size*self.seq_length, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
+            # print("val MLMinput: ", MLMinput.shape)
+            # print("val MLMinpit: ", MLMinput)
+            MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
+            # print("val MLMtarget: ", MLMtarget.shape)
+            # print("val MLMactual: ", MLMtarget)
+            perplexity = self.calculate_perplexity(MLMinput, MLMtarget) #TODO check if paras are okay, esp after reshaping them
+            print("val perplex: ", perplexity)
             self.log('val_perplex', perplexity, sync_dist=self.distributed)
 
         return loss
@@ -160,6 +190,7 @@ class BERTModel(pl.LightningModule):
         target = target.to(device="cpu")
         loss = nn.functional.cross_entropy(output, target)
         perplexity = torch.exp(loss)
+        print("perplex: ", perplexity)
         return perplexity
 
     # # dont need call function anymore bc got forward())

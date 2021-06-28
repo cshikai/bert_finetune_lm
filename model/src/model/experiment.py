@@ -166,13 +166,21 @@ class Experiment(object):
         valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
 
-        total_training_steps = self.n_epochs*self.batch_size
+        steps_per_epoch = len(train_dataset) // self.batch_size
+        total_training_steps = self.n_epochs*steps_per_epoch
         # take a fifth of training steps for warmup
         warmup_steps = total_training_steps//5
         distributed = self.n_gpu > 1
 
         print("experiment.py: declare model")
-        model = BERTModel(use_uncased=self.use_uncased, task=task, round=round, lr=self.learning_rate, num_training_steps=total_training_steps, num_warmup_steps=warmup_steps, distributed=distributed)
+        model = BERTModel(use_uncased=self.use_uncased,
+                          task=task, round=round,
+                          lr=self.learning_rate,
+                          num_training_steps=total_training_steps,
+                          num_warmup_steps=warmup_steps,
+                          batch_size=self.batch_size, 
+                          seq_length=self.max_length,
+                          distributed=distributed)
         model = model.cuda()
         callbacks = self._get_callbacks()
         logger = self._get_logger()
