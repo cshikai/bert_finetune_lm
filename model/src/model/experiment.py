@@ -133,10 +133,10 @@ class Experiment(object):
     def _get_logger(self):
         logger = TensorBoardLogger(self.checkpoint_dir, name='logs')
         return logger
-    def _get_callbacks(self):
+    def _get_callbacks(self, model_name):
         checkpoint_callback = ModelCheckpoint(
             dirpath=self.checkpoint_dir,
-            filename = '{k}-{epoch}',
+            filename = model_name + '-{k}-{epoch}',
             save_top_k= self.save_top_k,
             verbose=True,
             monitor='val_loss',
@@ -147,7 +147,7 @@ class Experiment(object):
         callbacks = [checkpoint_callback,lr_logging_callback]
         return callbacks
 
-    def run_experiment(self, task:str, round:int):
+    def run_experiment(self, task:str, model_startpt:str=None):
         # if os.path.exists(self.checkpoint_dir):
         #     shutil.rmtree(self.checkpoint_dir)
 
@@ -174,14 +174,15 @@ class Experiment(object):
 
         print("experiment.py: declare model")
         model = BERTModel(use_uncased=self.use_uncased,
-                          task=task, round=round,
+                          task=task,
                           lr=self.learning_rate,
                           num_training_steps=total_training_steps,
                           num_warmup_steps=warmup_steps, 
                           seq_length=self.max_length,
-                          distributed=distributed)
+                          distributed=distributed,
+                          model_startpt = model_startpt)
         model = model.cuda()
-        callbacks = self._get_callbacks()
+        callbacks = self._get_callbacks(task)
         logger = self._get_logger()
         
         trainer = pl.Trainer(
@@ -201,6 +202,7 @@ class Experiment(object):
         
         print("experiment.py: trainer.fit")
         trainer.fit(model, train_loader, valid_loader)
+        return(callbacks[0].best_model_path)
 
         # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
         # valid_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"valid",self.transforms,self.time_encoding_dims)

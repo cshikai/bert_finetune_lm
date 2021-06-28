@@ -23,11 +23,10 @@ from . import results
 from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
 class BERTModel(pl.LightningModule):
-    def __init__(self, use_uncased:bool, task:str, round:int, lr:float, num_training_steps, num_warmup_steps, seq_length: int, distributed: bool):
+    def __init__(self, use_uncased:bool, task:str, lr:float, num_training_steps, num_warmup_steps, seq_length: int, distributed: bool, model_startpt:str = None):
         super().__init__()
         self.use_uncased = use_uncased
         self.task = task.upper()
-        self.round = round
         # self.batch_size = batch_size
         self.seq_length = seq_length
         # self.train_dataloader = train_dataloader
@@ -35,17 +34,17 @@ class BERTModel(pl.LightningModule):
         # self.num_epochs = num_epochs
         
         
-        self.model_startpoint = "round" + str(self.round-1) + "_model"
+        self.model_startpoint =model_startpt
         self.bert_case_uncase = 'bert-base-uncased' if self.use_uncased else 'bert-base-cased'
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
-        if (self.round == 1):
+        if (self.model_startpoint is None):
             if (self.task == "NSP"):
                 self.bert = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase)
             elif (self.task == "MLM"):
                 self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase)
         # start training the model from previously trained model which was saved
-        elif (self.round > 1):
+        else:
             if (self.task == "NSP"):
                 self.bert = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
                     # self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint, map_location='cpu')) #to load on cpu
