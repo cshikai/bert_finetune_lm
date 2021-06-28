@@ -26,55 +26,55 @@ from datasets import load_metric
 
 
 
-def calc_accuracy(output,Y,mask):
-    """
-    Calculate the accuracy (point by point evaluation)
-    :param output: output from the model (tensor)
-    :param Y: ground truth given by dataset (tensor)
-    :param mask: used to mask out the padding (tensor)
-    :return: accuracy used for validation logs (float)
-    """
-    _ , max_indices = torch.max(output.data,1)
-    max_indices = max_indices.view(mask.shape[1], mask.shape[0]).permute(1,0)
-    Y = Y.view(mask.shape[1], mask.shape[0]).permute(1,0)
-    max_indices = torch.masked_select(max_indices, mask)
-    Y = torch.masked_select(Y, mask)
-    train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
-    return train_acc, max_indices, Y
+# def calc_accuracy(output,Y,mask):
+#     """
+#     Calculate the accuracy (point by point evaluation)
+#     :param output: output from the model (tensor)
+#     :param Y: ground truth given by dataset (tensor)
+#     :param mask: used to mask out the padding (tensor)
+#     :return: accuracy used for validation logs (float)
+#     """
+#     _ , max_indices = torch.max(output.data,1)
+#     max_indices = max_indices.view(mask.shape[1], mask.shape[0]).permute(1,0)
+#     Y = Y.view(mask.shape[1], mask.shape[0]).permute(1,0)
+#     max_indices = torch.masked_select(max_indices, mask)
+#     Y = torch.masked_select(Y, mask)
+#     train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
+#     return train_acc, max_indices, Y
 
-def loss_function(trg, output, mask):
-    """
-    Calculate the loss (point by point evaluation)
-    :param trg: ground truth given by dataset (tensor)
-    :param output: output from the model (tensor)
-    :param mask: used to mask out the padding (tensor)
-    :return: loss needed for backpropagation and logging (float)
-    """
-    trg = trg[1:].permute(1,0,2)
-    output = output[1:].permute(1,0,2)
-    mask = mask.unsqueeze(2).expand(trg.size())
-    trg = torch.masked_select(trg, mask)
-    output = torch.masked_select(output, mask)
-    label_mask = (trg != 0)
-    selected = torch.masked_select(output, label_mask)
-    loss = -torch.sum(selected) / selected.size()[0]
-    return loss
+# def loss_function(trg, output, mask):
+#     """
+#     Calculate the loss (point by point evaluation)
+#     :param trg: ground truth given by dataset (tensor)
+#     :param output: output from the model (tensor)
+#     :param mask: used to mask out the padding (tensor)
+#     :return: loss needed for backpropagation and logging (float)
+#     """
+#     trg = trg[1:].permute(1,0,2)
+#     output = output[1:].permute(1,0,2)
+#     mask = mask.unsqueeze(2).expand(trg.size())
+#     trg = torch.masked_select(trg, mask)
+#     output = torch.masked_select(output, mask)
+#     label_mask = (trg != 0)
+#     selected = torch.masked_select(output, label_mask)
+#     loss = -torch.sum(selected) / selected.size()[0]
+#     return loss
 
-def default_collate(batch,y_padding_value,mode3_padding_value,callsign_padding_value):
-    """
-    Stack the tensors from dataloader and pad sequences in batch
-    :param batch: batch from the torch dataloader
-    :return: stacked input to the seq2seq model
-    """
-    batch.sort(key=lambda x: x[-1], reverse=True)
-    batch_x, batch_y, batch_mode3, batch_callsign, batch_len = zip(*batch)
-    batch_pad_x = torch.nn.utils.rnn.pad_sequence(batch_x,batch_first=True)
-    batch_pad_y = torch.nn.utils.rnn.pad_sequence(batch_y,batch_first=True,padding_value=y_padding_value)
-    batch_pad_mode3 = torch.nn.utils.rnn.pad_sequence(batch_mode3,batch_first=True,padding_value=mode3_padding_value)
-    batch_pad_callsign = torch.nn.utils.rnn.pad_sequence(batch_callsign,batch_first=True,padding_value=callsign_padding_value)
+# def default_collate(batch,y_padding_value,mode3_padding_value,callsign_padding_value):
+#     """
+#     Stack the tensors from dataloader and pad sequences in batch
+#     :param batch: batch from the torch dataloader
+#     :return: stacked input to the seq2seq model
+#     """
+#     batch.sort(key=lambda x: x[-1], reverse=True)
+#     batch_x, batch_y, batch_mode3, batch_callsign, batch_len = zip(*batch)
+#     batch_pad_x = torch.nn.utils.rnn.pad_sequence(batch_x,batch_first=True)
+#     batch_pad_y = torch.nn.utils.rnn.pad_sequence(batch_y,batch_first=True,padding_value=y_padding_value)
+#     batch_pad_mode3 = torch.nn.utils.rnn.pad_sequence(batch_mode3,batch_first=True,padding_value=mode3_padding_value)
+#     batch_pad_callsign = torch.nn.utils.rnn.pad_sequence(batch_callsign,batch_first=True,padding_value=callsign_padding_value)
 
-    batch_len = torch.Tensor(batch_len).type(torch.int64)
-    return [batch_pad_x, batch_pad_y, batch_pad_mode3, batch_pad_callsign, batch_len]
+#     batch_len = torch.Tensor(batch_len).type(torch.int64)
+#     return [batch_pad_x, batch_pad_y, batch_pad_mode3, batch_pad_callsign, batch_len]
 
 
 
@@ -167,8 +167,9 @@ class Experiment(object):
         total_training_steps = self.n_epochs*self.batch_size
         # take a fifth of training steps for warmup
         warmup_steps = total_training_steps//5
-        model = BERTModel(use_uncased=self.use_uncased, task=task, round=round, lr=self.learning_rate, num_training_steps=total_training_steps, num_warmup_steps=warmup_steps)
 
+        model = BERTModel(use_uncased=self.use_uncased, task=task, round=round, lr=self.learning_rate, num_training_steps=total_training_steps, num_warmup_steps=warmup_steps)
+        model = model.cuda()
         callbacks = self._get_callbacks()
         logger = self._get_logger()
         
@@ -186,7 +187,7 @@ class Experiment(object):
             lr_finder = trainer.tuner.lr_find(model,train_loader,valid_loader)
             new_lr = lr_finder.suggestion()
             model.learning_rate = new_lr
-        
+
         trainer.fit(model, train_loader, valid_loader)
 
         # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
