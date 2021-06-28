@@ -23,12 +23,12 @@ from . import results
 from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
 class BERTModel(pl.LightningModule):
-    def __init__(self, use_uncased:bool, task:str, round:int, lr:float, num_training_steps, num_warmup_steps, batch_size: int, seq_length: int, distributed: bool):
+    def __init__(self, use_uncased:bool, task:str, round:int, lr:float, num_training_steps, num_warmup_steps, seq_length: int, distributed: bool):
         super().__init__()
         self.use_uncased = use_uncased
         self.task = task.upper()
         self.round = round
-        self.batch_size = batch_size
+        # self.batch_size = batch_size
         self.seq_length = seq_length
         # self.train_dataloader = train_dataloader
         # self.eval_dataloader = eval_dataloader
@@ -101,12 +101,13 @@ class BERTModel(pl.LightningModule):
             # print("NSPactual: ", NSPactual)
             # print("train accuracy: ", accuracy)
         elif (self.task == "MLM"):
-            # print("train output.logits: ", output.logits.shape)
+            print("train output.logits: ", output.logits.shape)
             # print("train output.logits: ", output.logits)
             # print("train labels: ", labels.shape)
             # print("train labels: ", labels)
             # MLMinput = output.logits[:, -1, :]
-            MLMinput = torch.reshape(output.logits, (self.batch_size*self.seq_length, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
+            first_dim = list(output.logits.shape)[0] * self.seq_length
+            MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
             # print("train MLMinput: ", MLMinput.shape)
             # print("train MLMinpit: ", MLMinput)
             MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
@@ -145,7 +146,8 @@ class BERTModel(pl.LightningModule):
             # print("val labels: ", labels.shape)
             # print("val labels: ", labels)
             # MLMinput = output.logits[:, -1, :]
-            MLMinput = torch.reshape(output.logits, (self.batch_size*self.seq_length, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
+            first_dim = list(output.logits.shape)[0] * self.seq_length
+            MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
             # print("val MLMinput: ", MLMinput.shape)
             # print("val MLMinpit: ", MLMinput)
             MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)

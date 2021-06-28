@@ -177,8 +177,7 @@ class Experiment(object):
                           task=task, round=round,
                           lr=self.learning_rate,
                           num_training_steps=total_training_steps,
-                          num_warmup_steps=warmup_steps,
-                          batch_size=self.batch_size, 
+                          num_warmup_steps=warmup_steps, 
                           seq_length=self.max_length,
                           distributed=distributed)
         model = model.cuda()
