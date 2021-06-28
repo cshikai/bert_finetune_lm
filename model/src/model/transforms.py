@@ -14,7 +14,7 @@ class NSPTokenization():
         self.tokenizer = tokenizer # either cased or uncased tokenizer
         self.max_length = max_length
     def __call__(self):
-        print("transforms.py: in NSPTokenization class")
+        # print("transforms.py: in NSPTokenization class")
         sentence_a = []
         sentence_b = []
         labels = []
@@ -100,7 +100,7 @@ class Tokenization():
             tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         # task
         if self.task == "NSP":
-            print("transforms.py: Tokenization class, going to tokenize for nsp")
+            # print("transforms.py: Tokenization class, going to tokenize for nsp")
             nsp = NSPTokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
             tokenized = nsp()
         elif self.task == "MLM":

@@ -156,12 +156,12 @@ class Experiment(object):
         pl.seed_everything(self.seed)
 
         ##### new #####
-        print("experiment.py: getting datasets")
+        # print("experiment.py: getting datasets")
         train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length)
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
 
-        print("experiment.py: getting dataloaders")
+        # print("experiment.py: getting dataloaders")
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
@@ -172,7 +172,7 @@ class Experiment(object):
         warmup_steps = total_training_steps//5
         distributed = self.n_gpu > 1
 
-        print("experiment.py: declare model")
+        # print("experiment.py: declare model")
         model = BERTModel(use_uncased=self.use_uncased,
                           task=task,
                           lr=self.learning_rate,
@@ -200,7 +200,7 @@ class Experiment(object):
             new_lr = lr_finder.suggestion()
             model.learning_rate = new_lr
         
-        print("experiment.py: trainer.fit")
+        # print("experiment.py: trainer.fit")
         trainer.fit(model, train_loader, valid_loader)
         return(callbacks[0].best_model_path)
 

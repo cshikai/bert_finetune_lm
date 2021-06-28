@@ -27,13 +27,13 @@ class CovidDataset(Dataset):
         # TODO Change path to load data
         # data would have already been loaded into local drive in the pipeline folder
         path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
-        print("dataset.py: open data file in pipeline folder")
+        # print("dataset.py: open data file in pipeline folder")
         with open(path) as f:
             all_data = json.load(f)
             self.data = all_data[self.mode]
-        print("dataset.py: initialise tokenizer class")
+        # print("dataset.py: initialise tokenizer class")
         tokenize = transforms.Tokenization(data=self.data, task=self.task, use_uncased=self.use_uncased, max_length=self.max_length)
-        print("dataset.py: tokenizing")
+        # print("dataset.py: tokenizing")
         self.data = tokenize()
         # if self.use_uncased:
         #     with open('uncased.json') as f:
