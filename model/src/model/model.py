@@ -23,7 +23,7 @@ from . import results
 from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
 class BERTModel(pl.LightningModule):
-    def __init__(self, use_uncased:bool, task:str, round:int, lr:float, num_training_steps, num_warmup_steps):
+    def __init__(self, use_uncased:bool, task:str, round:int, lr:float, num_training_steps, num_warmup_steps, distributed):
         super().__init__()
         self.use_uncased = use_uncased
         self.task = task.upper()
@@ -59,6 +59,7 @@ class BERTModel(pl.LightningModule):
         self.num_training_steps = num_training_steps
         self.num_warmup_steps = num_warmup_steps
         
+        self.distributed = distributed
         #loss
         # self.criterion = nn.CrossEntropyLoss()
 
@@ -147,7 +148,6 @@ class BERTModel(pl.LightningModule):
     def calculate_accuracy(self, output, target):
         print("model.py: calc acc")
         accuracy = Accuracy()
-        print('.')
         output = output.to(device="cpu")
         target = target.to(device="cpu")
         # print(accuracy(output,target).device)

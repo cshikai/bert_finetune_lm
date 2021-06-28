@@ -68,7 +68,7 @@ train:
     seed: 123
     #epochs: 40
     batch_size: 8
-    lr: 0.001 # change
+    lr: 0.000005 # change
     auto_lr: False
     lr_schedule:
         lr_decay:  #check pytoch's ReduceLROnPlateau for argument meaning
