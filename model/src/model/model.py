@@ -3,6 +3,7 @@ import random
 import numpy as np
 
 import torch
+from torch._C import device
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import pytorch_lightning as pl
@@ -95,6 +96,7 @@ class BERTModel(pl.LightningModule):
             NSPpredictions = torch.argmax(output.logits, dim=-1)
             NSPactual = torch.reshape(labels, (-1,))
             accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
+            print("train acc: ", accuracy)
             self.log('train_acc', accuracy, sync_dist=self.distributed)
             # print("NSPpredictions: ", NSPpredictions)
             # print("NSPactual: ", NSPactual)
@@ -138,6 +140,7 @@ class BERTModel(pl.LightningModule):
             NSPpredictions = torch.argmax(output.logits, dim=-1)
             NSPactual = torch.reshape(labels, (-1,))
             accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
+            print("val acc: ", accuracy)
             self.log('val_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
             # print("val output.logits: ", output.logits.shape)
@@ -178,17 +181,17 @@ class BERTModel(pl.LightningModule):
     # metric for NSP
     def calculate_accuracy(self, output, target):
         print("model.py: calc acc")
-        accuracy = Accuracy()
-        output = output.to(device="cpu")
-        target = target.to(device="cpu")
+        accuracy = Accuracy().to(device="cuda")
+        # output = output.to(device="cpu")
+        # target = target.to(device="cpu")
         # print(accuracy(output,target).device)
         return accuracy(output, target)
         
     # metric for MLM
     def calculate_perplexity(self, output, target):
         print("model.py: calc perplex")
-        output = output.to(device="cpu")
-        target = target.to(device="cpu")
+        # output = output.to(device="cpu")
+        # target = target.to(device="cpu")
         loss = nn.functional.cross_entropy(output, target)
         perplexity = torch.exp(loss)
         return perplexity
