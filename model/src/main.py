@@ -48,7 +48,8 @@ if __name__ == '__main__':
     print("in main.py")
     exp = experiment.Experiment(args, clearml_task)
     exp.run_experiment(task='NSP', round=1)
-    # exp.run_experiment(Task='MLM', round=2)
+    # exp.run_experiment(task='MLM', round=1)
+    # exp.run_experiment(task='MLM', round=2)
 
 
 

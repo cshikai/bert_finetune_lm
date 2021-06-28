@@ -60,17 +60,18 @@ class BERTModel(pl.LightningModule):
         self.num_warmup_steps = num_warmup_steps
         
         #loss
-        self.criterion = nn.CrossEntropyLoss
+        # self.criterion = nn.CrossEntropyLoss()
 
     
-    def forward(self, input_ids, attention_mask, labels):
+    def forward(self, input_ids, attention_mask, labels=None):
         """
         Forward propagation of one batch.
         """
         print("model.py: forward")
         output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        loss = output.loss
         
-        return output #not sure what to return...
+        return loss, output #not sure what to return...
 
     def training_step(self, batch, batch_idx):
         """
@@ -84,21 +85,20 @@ class BERTModel(pl.LightningModule):
         labels = batch['labels']
 
         # call forward
-        output = self(input_ids, attention_mask, labels)
-        loss = output.loss
-        NSPpredictions = torch.argmax(output.logits, dim=-1)
-        NSPactual = torch.reshape(labels, (-1,))
-        accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
-        perplexity = self.calculate_perplexity(output.logits, labels) #not sure about the paras
-
+        loss, output = self(input_ids, attention_mask, labels)
+        
         # log metrices
         self.log('train_loss', loss, sync_dist=self.distributed)
         if (self.task == "NSP"):
+            NSPpredictions = torch.argmax(output.logits, dim=-1)
+            NSPactual = torch.reshape(labels, (-1,))
+            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
             self.log('train_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
+            perplexity = self.calculate_perplexity(output.logits, labels) #not sure about the paras
             self.log('train_perplex', perplexity, sync_dist=self.distributed)
         
-        return loss
+        return {"loss": loss, "predictions": output, "labels": labels}
 
     def validation_step(self, batch, batch_idx):
         """
@@ -111,31 +111,30 @@ class BERTModel(pl.LightningModule):
         labels = batch['labels']
 
         # call forward
-        output = self(input_ids, attention_mask, labels)
-        loss = output.loss
-        NSPpredictions = torch.argmax(output.logits, dim=-1)
-        NSPactual = torch.reshape(labels, (-1,))
-        accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
-        perplexity = self.calculate_perplexity(output.logits, labels) #not sure about the paras
+        loss, output = self(input_ids, attention_mask, labels)
         # _, max_indices = torch.max(output,1) #idk if we need this
-
         # log metrices
         self.log('val_loss', loss, sync_dist=self.distributed)
         if (self.task == "NSP"):
+            NSPpredictions = torch.argmax(output.logits, dim=-1)
+            NSPactual = torch.reshape(labels, (-1,))
+            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
             self.log('val_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
+            perplexity = self.calculate_perplexity(output, labels) #not sure about the paras
             self.log('val_perplex', perplexity, sync_dist=self.distributed)
 
-        return {
-            'val_loss': loss,
-            'val_acc': accuracy,
-            'val_perplex': perplexity,
-            # 'labels':y,
-            # 'predictions':max_indices,
-            # 'confidence':confidence,
-            # 'seg_labels': seg_y,
-            # 'seg_predictions': seg_pred
-            }
+        return loss
+        # {
+        #     'val_loss': loss,
+        #     'val_acc': accuracy,
+        #     'val_perplex': perplexity,
+        #     # 'labels':y,
+        #     # 'predictions':max_indices,
+        #     # 'confidence':confidence,
+        #     # 'seg_labels': seg_y,
+        #     # 'seg_predictions': seg_pred
+        #     }
 
     def configure_optimizers(self):
         print("model.py: configure_optimizers")
@@ -148,12 +147,18 @@ class BERTModel(pl.LightningModule):
     def calculate_accuracy(self, output, target):
         print("model.py: calc acc")
         accuracy = Accuracy()
+        print('.')
+        output = output.to(device="cpu")
+        target = target.to(device="cpu")
+        # print(accuracy(output,target).device)
         return accuracy(output, target)
         
     # metric for MLM
     def calculate_perplexity(self, output, target):
         print("model.py: calc perplex")
-        loss = self.criterion(output, target)
+        output = output.to(device="cpu")
+        target = target.to(device="cpu")
+        loss = nn.functional.cross_entropy(output, target)
         perplexity = torch.exp(loss)
         return perplexity
 
