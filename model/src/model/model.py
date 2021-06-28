@@ -67,7 +67,8 @@ class BERTModel(pl.LightningModule):
         """
         Forward propagation of one batch.
         """
-        output = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        print("model.py: forward")
+        output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
         
         return output #not sure what to return...
 
@@ -75,6 +76,7 @@ class BERTModel(pl.LightningModule):
         """
         Pytorch lightning training step.
         """
+        print("model.py: training_step")
         # calls forward, loss function, accuracy function, perplexity function
         # decide what happens to one batch of data here
         input_ids = batch['input_ids']
@@ -102,6 +104,7 @@ class BERTModel(pl.LightningModule):
         """
         Pytorch lightning validation step.
         """
+        print("model.py: val_step")
         # our evaluate function but for one batch and without the code to decide best epoch
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
@@ -135,6 +138,7 @@ class BERTModel(pl.LightningModule):
             }
 
     def configure_optimizers(self):
+        print("model.py: configure_optimizers")
         optimizer = AdamW(self.parameters(), lr=self.lr)
         scheduler = get_scheduler('linear', optimizer=optimizer, num_warmup_steps=self.num_warmup_steps, num_training_steps=self.num_training_steps)
 
@@ -142,11 +146,13 @@ class BERTModel(pl.LightningModule):
 
     # metric for NSP
     def calculate_accuracy(self, output, target):
+        print("model.py: calc acc")
         accuracy = Accuracy()
         return accuracy(output, target)
         
     # metric for MLM
     def calculate_perplexity(self, output, target):
+        print("model.py: calc perplex")
         loss = self.criterion(output, target)
         perplexity = torch.exp(loss)
         return perplexity

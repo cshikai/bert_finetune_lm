@@ -16,3 +16,17 @@ model/.vscode/settings.json
 model/src/pipeline/cased.json
 .gitignore
 model/src/pipeline/uncased.json
+model/src/model/__pycache__/attention.cpython-38.pyc
+model/src/model/__pycache__/config.cpython-38.pyc
+model/src/model/__pycache__/dataset.cpython-38.pyc
+model/src/model/__pycache__/decoder.cpython-38.pyc
+model/src/model/__pycache__/encoder.cpython-38.pyc
+model/src/model/__pycache__/experiment.cpython-38.pyc
+model/src/model/__pycache__/id_encoder.cpython-38.pyc
+model/src/model/__pycache__/model.cpython-38.pyc
+model/src/model/__pycache__/results.cpython-38.pyc
+model/src/model/__pycache__/transforms.cpython-38.pyc
+model/src/pipeline/__pycache__/config.cpython-38.pyc
+model/src/pipeline/__pycache__/pipeline.cpython-38.pyc
+model/src/remote/__pycache__/config.cpython-38.pyc
+model/src/remote/__pycache__/s3utility.cpython-38.pyc

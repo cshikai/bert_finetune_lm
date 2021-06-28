@@ -62,7 +62,7 @@ model:
 train:
     num_epochs: 3
 
-    n_gpu: 2
+    n_gpu: 1
     num_workers: 8
     accelerator: 'ddp'
     seed: 123

@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # exp = experiment.Experiment(args,task)
     # exp.run_experiment()
     # exp.create_torchscript_model('k=0-epoch=0.ckpt')
-    
+    print("in main.py")
     exp = experiment.Experiment(args, clearml_task)
     exp.run_experiment(task='NSP', round=1)
     # exp.run_experiment(Task='MLM', round=2)
