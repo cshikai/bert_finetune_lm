@@ -190,7 +190,6 @@ class BERTModel(pl.LightningModule):
         target = target.to(device="cpu")
         loss = nn.functional.cross_entropy(output, target)
         perplexity = torch.exp(loss)
-        print("perplex: ", perplexity)
         return perplexity
 
     # # dont need call function anymore bc got forward())
