@@ -199,9 +199,12 @@ class Experiment(object):
             model.learning_rate = new_lr
         
         trainer.fit(model, train_loader, valid_loader)
-        trainer.test(test_dataloaders = test_loader)
+
+        best_model = callbacks[0].best_model_path
+        # run test on best model
+        trainer.test(test_dataloaders = test_loader, ckpt_path=best_model)
         
-        return(callbacks[0].best_model_path)
+        return best_model
 
         # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
         # valid_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"valid",self.transforms,self.time_encoding_dims)
