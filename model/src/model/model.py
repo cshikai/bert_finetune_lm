@@ -65,16 +65,32 @@ class BERTModel(pl.LightningModule):
         #loss
         # self.criterion = nn.CrossEntropyLoss()
 
-    
+    def configure_optimizers(self):
+        # print("model.py: configure_optimizers")
+        optimizer = AdamW(self.parameters(), lr=self.lr)
+        scheduler = get_scheduler('linear', optimizer=optimizer, num_warmup_steps=self.num_warmup_steps, num_training_steps=self.num_training_steps)
+
+        return dict(optimizer=optimizer, lr_scheduler=dict(scheduler=scheduler, interval='step'))
+
+    # metric for NSP
+    def calculate_accuracy(self, output, target):
+        accuracy = Accuracy().to(device="cuda")
+        return accuracy(output, target)
+        
+    # metric for MLM
+    def calculate_perplexity(self, output, target):
+        loss = nn.functional.cross_entropy(output, target)
+        perplexity = torch.exp(loss)
+        return perplexity
+
     def forward(self, input_ids, attention_mask, labels=None):
         """
         Forward propagation of one batch.
         """
         # print("model.py: forward")
         output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-        loss = output.loss
-        
-        return loss, output #not sure what to return...
+
+        return output #not sure what to return...
 
     def training_step(self, batch, batch_idx):
         """
@@ -88,35 +104,22 @@ class BERTModel(pl.LightningModule):
         labels = batch['labels']
 
         # call forward
-        loss, output = self(input_ids, attention_mask, labels)
+        output = self(input_ids, attention_mask, labels)
+        loss = output.loss
         
         # log metrices
         self.log('train_loss', loss, sync_dist=self.distributed)
         if (self.task == "NSP"):
             NSPpredictions = torch.argmax(output.logits, dim=-1)
             NSPactual = torch.reshape(labels, (-1,))
-            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
-            # print("train acc: ", accuracy)
+            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual)
             self.log('train_acc', accuracy, sync_dist=self.distributed)
-            # print("NSPpredictions: ", NSPpredictions)
-            # print("NSPactual: ", NSPactual)
-            # print("train accuracy: ", accuracy)
+
         elif (self.task == "MLM"):
-            # print("train output.logits: ", output.logits.shape)
-            # print("train output.logits: ", output.logits)
-            # print("train labels: ", labels.shape)
-            # print("train labels: ", labels)
-            # MLMinput = output.logits[:, -1, :]
             first_dim = list(output.logits.shape)[0] * self.seq_length
             MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
-            # print("train MLMinput: ", MLMinput.shape)
-            # print("train MLMinpit: ", MLMinput)
             MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
-            # print("train MLMtarget: ", MLMtarget.shape)
-            # print("train MLMactual: ", MLMtarget)
-            perplexity = self.calculate_perplexity(MLMinput, MLMtarget) #TODO check if paras are okay, esp after reshaping them
-            # print("train perplex: ", perplexity)
-            # perplexity = self.calculate_perplexity(output.logits, labels) #not sure about the paras
+            perplexity = self.calculate_perplexity(MLMinput, MLMtarget)
             self.log('train_perplex', perplexity, sync_dist=self.distributed)
         
         return {"loss": loss, "predictions": output, "labels": labels}
@@ -132,69 +135,77 @@ class BERTModel(pl.LightningModule):
         labels = batch['labels']
 
         # call forward
-        loss, output = self(input_ids, attention_mask, labels)
-        # _, max_indices = torch.max(output,1) #idk if we need this
+        output = self(input_ids, attention_mask, labels)
+        loss = output.loss
         # log metrices
+        accuracy = 0
+        perplexity = 0
         self.log('val_loss', loss, sync_dist=self.distributed)
         if (self.task == "NSP"):
             NSPpredictions = torch.argmax(output.logits, dim=-1)
             NSPactual = torch.reshape(labels, (-1,))
-            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual) #not sure about the paras
-            # print("val acc: ", accuracy)
+            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual)
             self.log('val_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
-            # print("val output.logits: ", output.logits.shape)
-            # print("val output.logits: ", output.logits)
-            # print("val labels: ", labels.shape)
-            # print("val labels: ", labels)
-            # MLMinput = output.logits[:, -1, :]
             first_dim = list(output.logits.shape)[0] * self.seq_length
             MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
-            # print("val MLMinput: ", MLMinput.shape)
-            # print("val MLMinpit: ", MLMinput)
             MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
-            # print("val MLMtarget: ", MLMtarget.shape)
-            # print("val MLMactual: ", MLMtarget)
-            perplexity = self.calculate_perplexity(MLMinput, MLMtarget) #TODO check if paras are okay, esp after reshaping them
-            # print("val perplex: ", perplexity)
+            perplexity = self.calculate_perplexity(MLMinput, MLMtarget) 
             self.log('val_perplex', perplexity, sync_dist=self.distributed)
 
-        return loss
-        # {
-        #     'val_loss': loss,
-        #     'val_acc': accuracy,
-        #     'val_perplex': perplexity,
-        #     # 'labels':y,
-        #     # 'predictions':max_indices,
-        #     # 'confidence':confidence,
-        #     # 'seg_labels': seg_y,
-        #     # 'seg_predictions': seg_pred
-        #     }
+        return {
+            'val_loss': loss,
+            'val_acc': accuracy,
+            'val_perplex': perplexity,
+            # 'labels':y,
+            # 'predictions':max_indices,
+            # 'confidence':confidence,
+            # 'seg_labels': seg_y,
+            # 'seg_predictions': seg_pred
+            }
+    
+    def test_step(self, batch, batch_idx):
+        """
+        Pytorch lightning validation step.
+        """
+        # print("model.py: val_step")
+        # our evaluate function but for one batch and without the code to decide best epoch
+        input_ids = batch['input_ids']
+        attention_mask = batch['attention_mask']
+        labels = batch['labels']
 
-    def configure_optimizers(self):
-        # print("model.py: configure_optimizers")
-        optimizer = AdamW(self.parameters(), lr=self.lr)
-        scheduler = get_scheduler('linear', optimizer=optimizer, num_warmup_steps=self.num_warmup_steps, num_training_steps=self.num_training_steps)
+        # call forward
+        output = self(input_ids, attention_mask, labels)
+        loss = output.loss
+        # log metrices
+        accuracy = 0
+        perplexity = 0
+        self.log('val_loss', loss, sync_dist=self.distributed)
+        if (self.task == "NSP"):
+            NSPpredictions = torch.argmax(output.logits, dim=-1)
+            NSPactual = torch.reshape(labels, (-1,))
+            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual)
+            self.log('val_acc', accuracy, sync_dist=self.distributed)
+        elif (self.task == "MLM"):
+            first_dim = list(output.logits.shape)[0] * self.seq_length
+            MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
+            MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
+            perplexity = self.calculate_perplexity(MLMinput, MLMtarget) 
+            self.log('val_perplex', perplexity, sync_dist=self.distributed)
 
-        return dict(optimizer=optimizer, lr_scheduler=dict(scheduler=scheduler, interval='step'))
+        return {
+            'val_loss': loss,
+            'val_acc': accuracy,
+            'val_perplex': perplexity,
+            # 'labels':y,
+            # 'predictions':max_indices,
+            # 'confidence':confidence,
+            # 'seg_labels': seg_y,
+            # 'seg_predictions': seg_pred
+            }
 
-    # metric for NSP
-    def calculate_accuracy(self, output, target):
-        # print("model.py: calc acc")
-        accuracy = Accuracy().to(device="cuda")
-        # output = output.to(device="cpu")
-        # target = target.to(device="cpu")
-        # print(accuracy(output,target).device)
-        return accuracy(output, target)
-        
-    # metric for MLM
-    def calculate_perplexity(self, output, target):
-        # print("model.py: calc perplex")
-        # output = output.to(device="cpu")
-        # target = target.to(device="cpu")
-        loss = nn.functional.cross_entropy(output, target)
-        perplexity = torch.exp(loss)
-        return perplexity
+    def validation_epoch_end(self, output):
+        pass
 
     # # dont need call function anymore bc got forward())
     # def __call__(self):

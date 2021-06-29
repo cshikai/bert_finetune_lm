@@ -161,10 +161,9 @@ class Experiment(object):
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
 
-        # print("experiment.py: getting dataloaders")
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=True)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
+        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
 
         steps_per_epoch = len(train_dataset) // self.batch_size
         total_training_steps = self.n_epochs*steps_per_epoch
@@ -172,7 +171,6 @@ class Experiment(object):
         warmup_steps = total_training_steps//5
         distributed = self.n_gpu > 1
 
-        # print("experiment.py: declare model")
         model = BERTModel(use_uncased=self.use_uncased,
                           task=task,
                           lr=self.learning_rate,
@@ -200,8 +198,9 @@ class Experiment(object):
             new_lr = lr_finder.suggestion()
             model.learning_rate = new_lr
         
-        # print("experiment.py: trainer.fit")
         trainer.fit(model, train_loader, valid_loader)
+        trainer.test(test_dataloaders = test_loader)
+        
         return(callbacks[0].best_model_path)
 
         # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
