@@ -168,7 +168,6 @@ class BERTModel(pl.LightningModule):
         """
         Pytorch lightning validation step.
         """
-        # print("model.py: val_step")
         # our evaluate function but for one batch and without the code to decide best epoch
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
@@ -180,23 +179,23 @@ class BERTModel(pl.LightningModule):
         # log metrices
         accuracy = 0
         perplexity = 0
-        self.log('val_loss', loss, sync_dist=self.distributed)
+        self.log('test_loss', loss, sync_dist=self.distributed)
         if (self.task == "NSP"):
             NSPpredictions = torch.argmax(output.logits, dim=-1)
             NSPactual = torch.reshape(labels, (-1,))
             accuracy = self.calculate_accuracy(NSPpredictions, NSPactual)
-            self.log('val_acc', accuracy, sync_dist=self.distributed)
+            self.log('test_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
             first_dim = list(output.logits.shape)[0] * self.seq_length
             MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
             MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
             perplexity = self.calculate_perplexity(MLMinput, MLMtarget) 
-            self.log('val_perplex', perplexity, sync_dist=self.distributed)
+            self.log('test_perplex', perplexity, sync_dist=self.distributed)
 
         return {
-            'val_loss': loss,
-            'val_acc': accuracy,
-            'val_perplex': perplexity,
+            'test_loss': loss,
+            'test_acc': accuracy,
+            'test_perplex': perplexity,
             # 'labels':y,
             # 'predictions':max_indices,
             # 'confidence':confidence,

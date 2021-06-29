@@ -19,8 +19,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # task = Task.init(project_name="LM Project", task_name="Fine tuning",output_uri="http://192.168.56.253:9000/minio/vsmodels/snapshots")
-    # model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
-    # pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
+    task = Task.init(project_name="BERT", task_name="Fine tuning for domain specificity")
+    model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
+    pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
 
 	
 	
@@ -46,7 +47,8 @@ if __name__ == '__main__':
     # exp.run_experiment()
     # exp.create_torchscript_model('k=0-epoch=0.ckpt')
     # print("in main.py")
-    exp = experiment.Experiment(args, clearml_task)
+    # exp = experiment.Experiment(args, clearml_task)
+    exp = experiment.Experiment(args, task)
     nspbest = exp.run_experiment(task='NSP', model_startpt=None)
     # exp.run_experiment(task='MLM', model_startpt=None)
     exp.run_experiment(task='MLM', model_startpt = nspbest)

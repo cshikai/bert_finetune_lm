@@ -80,7 +80,7 @@ from datasets import load_metric
 
 class Experiment(object):
    #should init as arguments here 
-    def __init__(self, args, clearml_task=None):
+    def __init__(self, args, clearml_task):
         
         self.clearml_task = clearml_task
         self.datapath = args.data_path

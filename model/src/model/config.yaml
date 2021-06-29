@@ -45,7 +45,7 @@ data:
     max_flights: 400
 ---
 model:
-    use_uncased: True
+    use_uncased: False
     task: "NSP"
     sequence_length: 256
 
