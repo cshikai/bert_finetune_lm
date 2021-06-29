@@ -84,21 +84,21 @@ class Experiment(object):
         
         self.clearml_task = clearml_task
         self.datapath = args.data_path
-        self.features = args.data_features
-        self.callsign_column = args.data_identifiers_callsign_data_column
-        self.mode3_column = args.data_identifiers_mode3_data_column
-        self.time_encoding_dims = args.data_time_encoding_dims
-        self.n_features = (len(args.data_features) + self.time_encoding_dims -1) if self.time_encoding_dims else len(args.data_features)
-        self.label = args.data_label
+        # self.features = args.data_features
+        # self.callsign_column = args.data_identifiers_callsign_data_column
+        # self.mode3_column = args.data_identifiers_mode3_data_column
+        # self.time_encoding_dims = args.data_time_encoding_dims
+        # self.n_features = (len(args.data_features) + self.time_encoding_dims -1) if self.time_encoding_dims else len(args.data_features)
+        # self.label = args.data_label
        
-        self.weight_by = args.data_weight_by
+        # self.weight_by = args.data_weight_by
 
         
-        self.hid_dim = args.model_hidden_size
-        self.n_layers = args.model_hidden_layers
-        self.enc_dropout = args.model_enc_dropout
-        self.dec_dropout = args.model_dec_dropout
-        self.teacher_forcing = args.model_teacher_forcing
+        # self.hid_dim = args.model_hidden_size
+        # self.n_layers = args.model_hidden_layers
+        # self.enc_dropout = args.model_enc_dropout
+        # self.dec_dropout = args.model_dec_dropout
+        # self.teacher_forcing = args.model_teacher_forcing
 
 
         self.checkpoint_dir = args.train_checkpoint_dir
@@ -114,15 +114,15 @@ class Experiment(object):
         self.save_top_k = args.train_save_top_k
         self.num_workers = args.train_num_workers
 
-        self.n_mode3_token_embedding = args.model_n_mode3_token_embedding 
-        self.n_mode3_token_layers = args.model_n_mode3_token_layers
+        # self.n_mode3_token_embedding = args.model_n_mode3_token_embedding 
+        # self.n_mode3_token_layers = args.model_n_mode3_token_layers
 
-        self.n_callsign_token_embedding = args.model_n_callsign_token_embedding 
-        self.n_callsign_token_layers = args.model_n_callsign_token_layers
+        # self.n_callsign_token_embedding = args.model_n_callsign_token_embedding 
+        # self.n_callsign_token_layers = args.model_n_callsign_token_layers
         
         self.seed = args.train_seed
-        self.transforms = cfg['data']['transforms']
-        self.lr_schedule = cfg['train']['lr_schedule']
+        # self.transforms = cfg['data']['transforms']
+        # self.lr_schedule = cfg['train']['lr_schedule']
 
         self.use_uncased = args.model_use_uncased
         self.max_length = args.model_sequence_length
