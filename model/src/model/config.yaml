@@ -2,62 +2,62 @@
 # device: "cuda"
 data:
     path: '/src/data'
-    features: 
-        - 'latitude'
-        - 'longitude'
-        - 'altitude'
-        - 'speed'
-        - 'bearing'
-        - 'datetime'
-    time_encoding_dims: 6 # change
-    identifiers:
-        callsign_data_column: 'callsign'
-        mode3_data_column: 'mode3'            
-    label: 'flight_profile'
-    weight_by: 'label_point_count'
+    # features: 
+    #     - 'latitude'
+    #     - 'longitude'
+    #     - 'altitude'
+    #     - 'speed'
+    #     - 'bearing'
+    #     - 'datetime'
+    # time_encoding_dims: 6 # change
+    # identifiers:
+    #     callsign_data_column: 'callsign'
+    #     mode3_data_column: 'mode3'            
+    # label: 'flight_profile'
+    # weight_by: 'label_point_count'
     
 
-    transforms:
-        UpperClamp:
-            - 90
-            - 180
-            - 43000
-            - 930
-            - 360
-            # - 10000 # this is seconds elapsed , if using time encoding, no need to include this
-        Normalize:
-            - 90
-            - 180
-            - 43000
-            - 930
-            - 360
-            # - 10000 # this is seconds elapsed 
+    # transforms:
+    #     UpperClamp:
+    #         - 90
+    #         - 180
+    #         - 43000
+    #         - 930
+    #         - 360
+    #         # - 10000 # this is seconds elapsed , if using time encoding, no need to include this
+    #     Normalize:
+    #         - 90
+    #         - 180
+    #         - 43000
+    #         - 930
+    #         - 360
+    #         # - 10000 # this is seconds elapsed 
 
 
-    # max_alt: 43000
-    # max_lat: 90
-    # max_lon: 180
-    # max_head: 360
-    # max_spd: 930
-    use_synthetic: True #flag to toggle between using synthetic or actual data
-    min_num: 20 #remove tracks with no of pts less than this number (for actual data only)
-    min_flights: 40
-    max_flights: 400
+    # # max_alt: 43000
+    # # max_lat: 90
+    # # max_lon: 180
+    # # max_head: 360
+    # # max_spd: 930
+    # use_synthetic: True #flag to toggle between using synthetic or actual data
+    # min_num: 20 #remove tracks with no of pts less than this number (for actual data only)
+    # min_flights: 40
+    # max_flights: 400
 ---
 model:
     use_uncased: False
     task: "NSP"
     sequence_length: 256
 
-    hidden_layers: 2
-    hidden_size: 128
-    enc_dropout: 0.0
-    dec_dropout: 0.0
-    teacher_forcing: 0 # do not edit
-    n_callsign_token_embedding: 64
-    n_callsign_token_layers: 1
-    n_mode3_token_embedding: 32
-    n_mode3_token_layers: 2
+    # hidden_layers: 2
+    # hidden_size: 128
+    # enc_dropout: 0.0
+    # dec_dropout: 0.0
+    # teacher_forcing: 0 # do not edit
+    # n_callsign_token_embedding: 64
+    # n_callsign_token_layers: 1
+    # n_mode3_token_embedding: 32
+    # n_mode3_token_layers: 2
 ---
 train:
     num_epochs: 3
@@ -70,20 +70,20 @@ train:
     batch_size: 12
     lr: 0.000005 # change
     auto_lr: False
-    lr_schedule:
-        lr_decay:  #check pytoch's ReduceLROnPlateau for argument meaning
-            use_decay: !!bool "false"
-            factor: 0.5
-            patience: 5
-            cooldown: 0
-            eps: 0
-            metric_to_track: 'val_loss'
-        lr_cyclic:
-            use_cyclic: !!bool "true"
-            mode: 'triangular' #'triangular2' , 'exp_range'
-            lower_lr: 0.00001
-            epoch_size_up: 5 #epoch , not step
-            epoch_size_down: 5 #epoch, not step
+    # lr_schedule:
+    #     lr_decay:  #check pytoch's ReduceLROnPlateau for argument meaning
+    #         use_decay: !!bool "false"
+    #         factor: 0.5
+    #         patience: 5
+    #         cooldown: 0
+    #         eps: 0
+    #         metric_to_track: 'val_loss'
+    #     lr_cyclic:
+    #         use_cyclic: !!bool "true"
+    #         mode: 'triangular' #'triangular2' , 'exp_range'
+    #         lower_lr: 0.00001
+    #         epoch_size_up: 5 #epoch , not step
+    #         epoch_size_down: 5 #epoch, not step
     checkpoint_dir: '/src/trained_models/'
     save_top_k : 1 #number of top k models to save while training
     model_save_period: 1 # models are saved at the end of every <model_save_period> epoch
