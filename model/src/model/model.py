@@ -86,14 +86,17 @@ class BERTModel(pl.LightningModule):
         perplexity = torch.exp(loss)
         return perplexity
 
-    def forward(self, input_ids, attention_mask, labels=None):
+    def forward(self, input_ids, attention_mask, labels, start_positions, end_positions):
         """
         Forward propagation of one batch.
         """
         # print("model.py: forward")
-        output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        if (self.task == "QA"):
+            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, start_positions=start_positions, end_positions=end_positions)
+        else:
+            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
 
-        return output #not sure what to return...
+        return output
 
     def training_step(self, batch, batch_idx):
         """
@@ -104,10 +107,17 @@ class BERTModel(pl.LightningModule):
         # decide what happens to one batch of data here
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
-        labels = batch['labels']
+        labels = None
+        start_positions = None
+        end_positions = None
+        if (self.task == "QA"):
+            start_positions = batch['start_positions']
+            end_positions = batch['end_positions']
+        else:
+            labels = batch['labels']
 
         # call forward
-        output = self(input_ids, attention_mask, labels)
+        output = self(input_ids, attention_mask, labels, start_positions, end_positions)
         loss = output.loss
         
         # log metrices
@@ -136,10 +146,17 @@ class BERTModel(pl.LightningModule):
         # our evaluate function but for one batch and without the code to decide best epoch
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
-        labels = batch['labels']
+        labels = None
+        start_positions = None
+        end_positions = None
+        if (self.task == "QA"):
+            start_positions = batch['start_positions']
+            end_positions = batch['end_positions']
+        else:
+            labels = batch['labels']
 
         # call forward
-        output = self(input_ids, attention_mask, labels)
+        output = self(input_ids, attention_mask, labels, start_positions, end_positions)
         loss = output.loss
 
         # log metrices
@@ -178,11 +195,19 @@ class BERTModel(pl.LightningModule):
         # our evaluate function but for one batch and without the code to decide best epoch
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
-        labels = batch['labels']
+        labels = None
+        start_positions = None
+        end_positions = None
+        if (self.task == "QA"):
+            start_positions = batch['start_positions']
+            end_positions = batch['end_positions']
+        else:
+            labels = batch['labels']
 
         # call forward
-        output = self(input_ids, attention_mask, labels)
+        output = self(input_ids, attention_mask, labels, start_positions, end_positions)
         loss = output.loss
+        
         # log metrices
         accuracy = 0
         perplexity = 0
