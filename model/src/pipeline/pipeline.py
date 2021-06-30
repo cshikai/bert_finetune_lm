@@ -72,7 +72,7 @@ class PMCDataPipeline(object):
         data_final = {}
 
         # Split to train test valid
-        data_list = self.split_train_valid_test(data)
+        data_list = self.split_train_valid_test(data['data'])
 
         # Format data & Append to dict
         data_final['train'] = format(data_list['train'])
