@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import pytorch_lightning as pl
 import pandas as pd
 from torch.utils.data import DataLoader
-from transformers import BertForMaskedLM, BertForNextSentencePrediction, BertForQuestionAnswering, AdamW, get_scheduler
+from transformers import BertForMaskedLM, BertForNextSentencePrediction, BertForQuestionAnswering, BertTokenizerFast, AdamW, get_scheduler
 from datasets import load_metric
 from torchmetrics import Accuracy, F1
 import torch.nn.functional as F
@@ -45,6 +45,7 @@ class BERTModel(pl.LightningModule):
                 self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase)
             elif (self.task == "QA"):
                 self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase)
+                self.tokenizer = BertTokenizerFast.from_pretrained(self.bert_case_uncase)
         # start training the model from previously trained model which was saved
         else:
             if (self.task == "NSP"):
@@ -54,6 +55,7 @@ class BERTModel(pl.LightningModule):
                 self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
             elif (self.task == "QA"):
                 self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+                self.tokenizer = BertTokenizerFast.from_pretrained(self.bert_case_uncase)
 
         # self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
         # self.num_training_steps = self.num_epochs * len(self.train_dataloader)
@@ -86,15 +88,39 @@ class BERTModel(pl.LightningModule):
         perplexity = torch.exp(loss)
         return perplexity
 
-    # metric for QA 
+    # metrics for QA
+    # function to get the actual answers for a batch of input
+    def get_actual_answers(self, input_ids, start_positions, end_positions):
+        answers = []
+        for i, seq in enumerate(input_ids):
+            ids = input_ids[i][start_positions[i]:end_positions[i]+1]
+            answers.append(" ".join(self.tokenizer.convert_ids_to_tokens(ids)))
+        return answers
+    # function to get the predicted answers for a batch of input
+    def get_pred_answers(self, input_ids, start_logits, end_logits):
+        answers = []
+        for i, seq in enumerate(input_ids):
+            start_position = torch.argmax(start_logits[i])
+            end_position = torch.argmax(end_logits[i][start_position:])
+            ids = input_ids[i][start_position:end_position+1]
+            answers.append(" ".join(self.tokenizer.convert_ids_to_tokens(ids)))
+        return answers
+
     # F1 Score
     def calculate_f1(self, output, target):
         f1 = F1().to(device="cuda")
         return f1(output, target)
     
     # Exact Match
-    def calculate_exactmatch(self):
-        pass
+    def calculate_exactmatch(self, input_ids, start_positions, end_positions, start_logits, end_logits):
+        actual_ans = self.get_actual_answers(input_ids, start_positions, end_positions)
+        pred_ans = self.get_pred_answers(input_ids, start_positions, end_positions)
+        em = 0
+        length = len(actual_ans)
+        for i in range(length):
+            em += int(actual_ans[i]==pred_ans[i])
+        em /= length
+        return em
 
     def forward(self, input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids):
         """
