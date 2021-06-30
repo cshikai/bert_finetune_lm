@@ -174,6 +174,8 @@ class BERTModel(pl.LightningModule):
             perplexity = self.calculate_perplexity(MLMinput, MLMtarget)
             self.log('train_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
+            em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
+            self.log('train_exactmatch', em, sync_dist=self.distributed)
             pass
         
         return {"loss": loss, "predictions": output, "labels": labels}
@@ -219,7 +221,8 @@ class BERTModel(pl.LightningModule):
             perplexity = self.calculate_perplexity(MLMinput, MLMtarget) 
             self.log('val_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
-            pass
+            em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
+            self.log('val_exactmatch', em, sync_dist=self.distributed)
 
         return {
             'val_loss': loss,
@@ -271,6 +274,9 @@ class BERTModel(pl.LightningModule):
             MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
             perplexity = self.calculate_perplexity(MLMinput, MLMtarget) 
             self.log('test_perplex', perplexity, sync_dist=self.distributed)
+        elif (self.task == "QA"):
+            em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
+            self.log('test_exactmatch', em, sync_dist=self.distributed)
 
         return {
             'test_loss': loss,
