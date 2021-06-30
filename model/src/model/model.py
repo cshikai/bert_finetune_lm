@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import pytorch_lightning as pl
 import pandas as pd
 from torch.utils.data import DataLoader
-from transformers import BertForMaskedLM, BertForNextSentencePrediction, AdamW, get_scheduler
+from transformers import BertForMaskedLM, BertForNextSentencePrediction, BertForQuestionAnswering, AdamW, get_scheduler
 from datasets import load_metric
 from torchmetrics import Accuracy
 import torch.nn.functional as F
@@ -21,7 +21,6 @@ from .attention import Attention
 from .id_encoder import IdEncoder
 from . import results
 
-from transformers import BertForNextSentencePrediction, BertForMaskedLM
 
 class BERTModel(pl.LightningModule):
     def __init__(self, use_uncased:bool, task:str, lr:float, num_training_steps, num_warmup_steps, seq_length: int, distributed: bool, model_startpt:str = None):
@@ -44,6 +43,8 @@ class BERTModel(pl.LightningModule):
                 self.bert = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase)
             elif (self.task == "MLM"):
                 self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase)
+            elif (self.task == "QA"):
+                self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase)
         # start training the model from previously trained model which was saved
         else:
             if (self.task == "NSP"):
@@ -51,6 +52,8 @@ class BERTModel(pl.LightningModule):
                     # self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint, map_location='cpu')) #to load on cpu
             elif (self.task == "MLM"):
                 self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+            elif (self.task == "QA"):
+                self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
 
         # self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
         # self.num_training_steps = self.num_epochs * len(self.train_dataloader)
@@ -114,13 +117,14 @@ class BERTModel(pl.LightningModule):
             NSPactual = torch.reshape(labels, (-1,))
             accuracy = self.calculate_accuracy(NSPpredictions, NSPactual)
             self.log('train_acc', accuracy, sync_dist=self.distributed)
-
         elif (self.task == "MLM"):
             first_dim = list(output.logits.shape)[0] * self.seq_length
             MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
             MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
             perplexity = self.calculate_perplexity(MLMinput, MLMtarget)
             self.log('train_perplex', perplexity, sync_dist=self.distributed)
+        elif (self.task == "QA"):
+            pass
         
         return {"loss": loss, "predictions": output, "labels": labels}
 
@@ -137,6 +141,7 @@ class BERTModel(pl.LightningModule):
         # call forward
         output = self(input_ids, attention_mask, labels)
         loss = output.loss
+
         # log metrices
         accuracy = 0
         perplexity = 0
@@ -152,6 +157,8 @@ class BERTModel(pl.LightningModule):
             MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
             perplexity = self.calculate_perplexity(MLMinput, MLMtarget) 
             self.log('val_perplex', perplexity, sync_dist=self.distributed)
+        elif (self.task == "QA"):
+            pass
 
         return {
             'val_loss': loss,

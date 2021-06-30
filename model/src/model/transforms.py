@@ -128,12 +128,12 @@ class Tokenization():
     def __call__(self):
         # define tokenizer
         if self.use_uncased:
-            if (task == "QA"):
+            if (self.task == "QA"):
                 tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
             else:
                 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         else:
-            if (task == "QA"):
+            if (self.task == "QA"):
                 tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased')
             else:
                 tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
