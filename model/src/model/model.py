@@ -11,7 +11,7 @@ import pandas as pd
 from torch.utils.data import DataLoader
 from transformers import BertForMaskedLM, BertForNextSentencePrediction, BertForQuestionAnswering, AdamW, get_scheduler
 from datasets import load_metric
-from torchmetrics import Accuracy
+from torchmetrics import Accuracy, F1
 import torch.nn.functional as F
 
 from .config import cfg
@@ -86,7 +86,17 @@ class BERTModel(pl.LightningModule):
         perplexity = torch.exp(loss)
         return perplexity
 
-    def forward(self, input_ids, attention_mask, labels, start_positions, end_positions):
+    # metric for QA 
+    # F1 Score
+    def calculate_f1(self, output, target):
+        f1 = F1().to(device="cuda")
+        return f1(output, target)
+    
+    # Exact Match
+    def calculate_exactmatch(self):
+        pass
+
+    def forward(self, input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids):
         """
         Forward propagation of one batch.
         """
@@ -94,7 +104,7 @@ class BERTModel(pl.LightningModule):
         if (self.task == "QA"):
             output = self.bert(input_ids=input_ids, attention_mask=attention_mask, start_positions=start_positions, end_positions=end_positions)
         else:
-            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels, token_type_ids=token_type_ids)
 
         return output
 
@@ -107,17 +117,21 @@ class BERTModel(pl.LightningModule):
         # decide what happens to one batch of data here
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
+        token_type_ids = None
         labels = None
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
+        elif self.task == "NSP":
+            token_type_ids = batch['token_type_ids']
+            labels = batch['labels']
         else:
             labels = batch['labels']
 
         # call forward
-        output = self(input_ids, attention_mask, labels, start_positions, end_positions)
+        output = self(input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids)
         loss = output.loss
         
         # log metrices
@@ -146,17 +160,21 @@ class BERTModel(pl.LightningModule):
         # our evaluate function but for one batch and without the code to decide best epoch
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
+        token_type_ids = None
         labels = None
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
+        elif self.task == "NSP":
+            token_type_ids = batch['token_type_ids']
+            labels = batch['labels']
         else:
             labels = batch['labels']
 
         # call forward
-        output = self(input_ids, attention_mask, labels, start_positions, end_positions)
+        output = self(input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids)
         loss = output.loss
 
         # log metrices
@@ -195,17 +213,21 @@ class BERTModel(pl.LightningModule):
         # our evaluate function but for one batch and without the code to decide best epoch
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
+        token_type_ids = None
         labels = None
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
+        elif self.task == "NSP":
+            token_type_ids = batch['token_type_ids']
+            labels = batch['labels']
         else:
             labels = batch['labels']
 
         # call forward
-        output = self(input_ids, attention_mask, labels, start_positions, end_positions)
+        output = self(input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids)
         loss = output.loss
         
         # log metrices
