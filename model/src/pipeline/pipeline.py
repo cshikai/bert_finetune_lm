@@ -75,9 +75,9 @@ class PMCDataPipeline(object):
         data_list = self.split_train_valid_test(data['data'])
 
         # Format data & Append to dict
-        data_final['train'] = format(data_list['train'])
-        data_final['valid'] = format(data_list['valid'])
-        data_final['test'] = format(data_list['test'])
+        data_final['train'] = self.format_qna(data_list['train'])
+        data_final['valid'] = self.format_qna(data_list['valid'])
+        data_final['test'] = self.format_qna(data_list['test'])
 
         # TODO: Check if qna needs cased and uncased
         path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
