@@ -78,13 +78,18 @@ class BERTModel(pl.LightningModule):
         return dict(optimizer=optimizer, lr_scheduler=dict(scheduler=scheduler, interval='step'))
 
     # metric for NSP
-    def calculate_accuracy(self, output, target):
+    def calculate_accuracy(self, logits, labels):
+        NSPpredictions = torch.argmax(logits, dim=-1)
+        NSPtarget = torch.reshape(labels, (-1,))
         accuracy = Accuracy().to(device="cuda")
-        return accuracy(output, target)
+        return accuracy(NSPpredictions, NSPtarget)
         
     # metric for MLM
-    def calculate_perplexity(self, output, target):
-        loss = nn.functional.cross_entropy(output, target)
+    def calculate_perplexity(self, logits, labels):
+        first_dim = list(logits.shape)[0] * self.seq_length
+        MLMpredictions = torch.reshape(logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
+        MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
+        loss = nn.functional.cross_entropy(MLMpredictions, MLMtarget)
         perplexity = torch.exp(loss)
         return perplexity
 
@@ -114,7 +119,7 @@ class BERTModel(pl.LightningModule):
     # Exact Match
     def calculate_exactmatch(self, input_ids, start_positions, end_positions, start_logits, end_logits):
         actual_ans = self.get_actual_answers(input_ids, start_positions, end_positions)
-        pred_ans = self.get_pred_answers(input_ids, start_positions, end_positions)
+        pred_ans = self.get_pred_answers(input_ids, start_logits, end_logits)
         em = 0
         length = len(actual_ans)
         for i in range(length):
@@ -163,15 +168,10 @@ class BERTModel(pl.LightningModule):
         # log metrices
         self.log('train_loss', loss, sync_dist=self.distributed)
         if (self.task == "NSP"):
-            NSPpredictions = torch.argmax(output.logits, dim=-1)
-            NSPactual = torch.reshape(labels, (-1,))
-            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual)
+            accuracy = self.calculate_accuracy(output.logits, labels)
             self.log('train_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
-            first_dim = list(output.logits.shape)[0] * self.seq_length
-            MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
-            MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
-            perplexity = self.calculate_perplexity(MLMinput, MLMtarget)
+            perplexity = self.calculate_perplexity(output.logits, labels)
             self.log('train_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
@@ -210,15 +210,10 @@ class BERTModel(pl.LightningModule):
         perplexity = 0
         self.log('val_loss', loss, sync_dist=self.distributed)
         if (self.task == "NSP"):
-            NSPpredictions = torch.argmax(output.logits, dim=-1)
-            NSPactual = torch.reshape(labels, (-1,))
-            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual)
+            accuracy = self.calculate_accuracy(output.logits, labels)
             self.log('val_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
-            first_dim = list(output.logits.shape)[0] * self.seq_length
-            MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
-            MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
-            perplexity = self.calculate_perplexity(MLMinput, MLMtarget) 
+            perplexity = self.calculate_perplexity(output.logits, labels) 
             self.log('val_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
@@ -264,15 +259,10 @@ class BERTModel(pl.LightningModule):
         perplexity = 0
         self.log('test_loss', loss, sync_dist=self.distributed)
         if (self.task == "NSP"):
-            NSPpredictions = torch.argmax(output.logits, dim=-1)
-            NSPactual = torch.reshape(labels, (-1,))
-            accuracy = self.calculate_accuracy(NSPpredictions, NSPactual)
+            accuracy = self.calculate_accuracy(output.logits, labels)
             self.log('test_acc', accuracy, sync_dist=self.distributed)
         elif (self.task == "MLM"):
-            first_dim = list(output.logits.shape)[0] * self.seq_length
-            MLMinput = torch.reshape(output.logits, (first_dim, -1)) #reshape tensor to (batch_size*seq_length, vocab_size)
-            MLMtarget = torch.reshape(labels, (-1,)) #reshape tensor to (batch_size*seq_length)
-            perplexity = self.calculate_perplexity(MLMinput, MLMtarget) 
+            perplexity = self.calculate_perplexity(output.logits, labels) 
             self.log('test_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
