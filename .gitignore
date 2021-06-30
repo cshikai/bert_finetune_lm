@@ -30,3 +30,4 @@ model/src/pipeline/__pycache__/config.cpython-38.pyc
 model/src/pipeline/__pycache__/pipeline.cpython-38.pyc
 model/src/remote/__pycache__/config.cpython-38.pyc
 model/src/remote/__pycache__/s3utility.cpython-38.pyc
+model/src/pipeline/cased_qna.json

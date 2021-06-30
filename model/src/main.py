@@ -51,7 +51,8 @@ if __name__ == '__main__':
     exp = experiment.Experiment(args, task)
     nspbest = exp.run_experiment(task='NSP', model_startpt=None)
     # exp.run_experiment(task='MLM', model_startpt=None)
-    exp.run_experiment(task='MLM', model_startpt = nspbest)
+    # exp.run_experiment(task='QA', model_startpt=None)
+    # exp.run_experiment(task='MLM', model_startpt = nspbest)
 
 
 
