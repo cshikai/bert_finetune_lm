@@ -99,22 +99,43 @@ class QATokenization():
             contexts.append(self.data[i]['context'])
             questions.append(self.data[i]['question'])
             answers.append(self.data[i]['answer'])
-        model_inputs = self.tokenizer(contexts, questions, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        
+        context_tokens = self.tokenizer(contexts, return_tensors='pt', truncation=False, padding=True)
+        # model_inputs = self.tokenizer(contexts, questions, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
 
         # adding answer start and end positions to model_inputs
         start_positions = []
         end_positions = []
-        # change char indexing to token indexing
+        trunc_contexts = []
+
         for i, ans in enumerate(answers):
-            start_positions.append(model_inputs.char_to_token(i, answers[i]['answer_start']))
-            end_positions.append(model_inputs.char_to_token(i, answers[i]['answer_end'] - 1))
+            start_position = context_tokens.char_to_token(i, answers[i]['answer_start'])
+            end_position = context_tokens.char_to_token(i, answers[i]['answer_end'] - 1)
+            answer_len = end_position - start_position + 1
+            answer_start = random.randint(0,100)
+            answer_end = answer_start + answer_len - 1
+            context_start = start_position - answer_start
+            context_end = end_position + random.randint(0,100)
+            if (context_start<0):
+                context_start = 0
+            if (context_end >= len(self.tokenizer.decode(context_tokens['input_ids'][i]).split())):
+                context_end = len(self.tokenizer.decode(context_tokens['input_ids'][i]).split()) - 1
+            new_context = self.tokenizer.decode(context_tokens['input_ids'][i][context_start:context_end+1])
+            trunc_contexts.append(new_context)
+            start_positions.append(answer_start)
+            end_positions.append(answer_end)
 
+        # change char indexing to token indexing
+        # for i, ans in enumerate(answers):
+            # start_positions.append(model_inputs.char_to_token(i, answers[i]['answer_start']))
+            # end_positions.append(model_inputs.char_to_token(i, answers[i]['answer_end'] - 1))
             # if start position is None, the answer passage has been truncated
-            if (start_positions[-1] is None):
-                start_positions[-1] = self.max_length
-            if (end_positions[-1] is None):
-                end_positions[-1] = self.max_length
+            # if (start_positions[-1] is None):
+            #     start_positions[-1] = self.max_length
+            # if (end_positions[-1] is None):
+            #     end_positions[-1] = self.max_length
 
+        model_inputs = self.tokenizer(trunc_contexts, questions, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         model_inputs.update({'start_positions': start_positions, 'end_positions': end_positions})
 
         print("transforms.py: model_inputs:", model_inputs)
