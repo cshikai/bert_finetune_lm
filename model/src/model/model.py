@@ -122,8 +122,8 @@ class BERTModel(pl.LightningModule):
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
-            start_positions = batch['start_positions']
-            end_positions = batch['end_positions']
+            start_positions = batch['answer_start']
+            end_positions = batch['answer_end']
         elif self.task == "NSP":
             token_type_ids = batch['token_type_ids']
             labels = batch['labels']
@@ -148,6 +148,7 @@ class BERTModel(pl.LightningModule):
             perplexity = self.calculate_perplexity(MLMinput, MLMtarget)
             self.log('train_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
+
             pass
         
         return {"loss": loss, "predictions": output, "labels": labels}
@@ -165,8 +166,8 @@ class BERTModel(pl.LightningModule):
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
-            start_positions = batch['start_positions']
-            end_positions = batch['end_positions']
+            start_positions = batch['answer_start']
+            end_positions = batch['answer_end']
         elif self.task == "NSP":
             token_type_ids = batch['token_type_ids']
             labels = batch['labels']
@@ -218,8 +219,8 @@ class BERTModel(pl.LightningModule):
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
-            start_positions = batch['start_positions']
-            end_positions = batch['end_positions']
+            start_positions = batch['answer_start']
+            end_positions = batch['answer_end']
         elif self.task == "NSP":
             token_type_ids = batch['token_type_ids']
             labels = batch['labels']
