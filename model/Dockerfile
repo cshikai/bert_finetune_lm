@@ -18,7 +18,7 @@ RUN pip install --upgrade pip
 
 # Install pip requirements
 ADD requirements.txt .
-RUN python -m pip install -r requirements.txt
+RUN python -m pip install -r requirements.txt --ignore-installed
 RUN pip install jupyter
 # RUN python -m pip install "dask[dataframe]"
 # RUN pip install fastparquet
@@ -28,4 +28,4 @@ RUN pip install jupyter
 WORKDIR /src
 # WORKDIR /src/files
 
-# CMD ["python3", "main.py"]
+#CMD ["python3", "main.py"]

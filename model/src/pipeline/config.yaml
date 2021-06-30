@@ -1,13 +1,13 @@
 source: 'mysql+mysqlconnector://root:root@db:3306/intel_sample_y?use_pure=True'
       
 # use_uncased: !!bool 'true'
-use_uncased: True
+use_uncased: False
 
-data:
+# data:
 
-    valid_size: 0.2
-    min_length: 20 #anything below 20 datapoints will be removed completely from the data
-    max_length: 400 #anything above 400 datapoints will be cut off
+#     valid_size: 0.2
+#     min_length: 20 #anything below 20 datapoints will be removed completely from the data
+#     max_length: 400 #anything above 400 datapoints will be cut off
 
 seed: 123
 

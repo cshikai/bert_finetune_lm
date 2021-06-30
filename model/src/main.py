@@ -19,14 +19,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # task = Task.init(project_name="LM Project", task_name="Fine tuning",output_uri="http://192.168.56.253:9000/minio/vsmodels/snapshots")
-    # model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
-    # pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
+    task = Task.init(project_name="BERT", task_name="Fine tuning for domain specificity")
+    model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
+    pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
 
 	
 	
-    # task = None
-    #task.set_base_docker('https://index.docker.io/v1/intel_model_model')	
-    #task.execute_remotely(queue_name="gpu")
+    clearml_task = None
+    #clearml_task.set_base_docker('https://index.docker.io/v1/intel_model_model')	
+    #clearml_task.execute_remotely(queue_name="gpu")
     # if remote_cfg.s3.use_s3:
     #     print('using remote data source...')
     #     s3_utils = s3utility.S3Utils(remote_cfg.s3.bucket,remote_cfg.s3.s3_path)
@@ -37,17 +38,20 @@ if __name__ == '__main__':
     # #run pipeline to extract data from raw data
     # annotated_data_pipe()
 
-    PMC_data_pipe = pipeline.PMCDataPipeline(args.pipeline_use_uncased)
+    # PMC_data_pipe = pipeline.PMCDataPipeline(args)
+    # PMC_data_pipe()
 
     
 
     # exp = experiment.Experiment(args,task)
     # exp.run_experiment()
     # exp.create_torchscript_model('k=0-epoch=0.ckpt')
-    
-    exp = experiment.Experiment(args)
-    exp.run_experiment(task='NSP', round=1)
-    # exp.run_experiment(Task='MLM', round=2)
+    # print("in main.py")
+    # exp = experiment.Experiment(args, clearml_task)
+    exp = experiment.Experiment(args, task)
+    nspbest = exp.run_experiment(task='NSP', model_startpt=None)
+    # exp.run_experiment(task='MLM', model_startpt=None)
+    exp.run_experiment(task='MLM', model_startpt = nspbest)
 
 
 

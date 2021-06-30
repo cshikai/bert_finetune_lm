@@ -4,7 +4,7 @@ from torch import Tensor
 import os
 import numpy as np
 import requests
-from transformers import BertTokenizer, BertForPreTraining
+from transformers import BertTokenizer, BertTokenizerFast
 import itertools
 import random
 
@@ -14,6 +14,7 @@ class NSPTokenization():
         self.tokenizer = tokenizer # either cased or uncased tokenizer
         self.max_length = max_length
     def __call__(self):
+        # print("transforms.py: in NSPTokenization class")
         sentence_a = []
         sentence_b = []
         labels = []
@@ -85,6 +86,39 @@ class MLMTokenization():
        
         return model_inputs
 
+class QATokenization():
+    def __init__(self, data: list, tokenizer, max_length):
+        self.data = data
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+    def __call__(self):
+        contexts = []
+        questions = []
+        answers = []
+        for i, pair in enumerate(self.data):
+            contexts.append(self.data[i]['context'])
+            questions.append(self.data[i]['question'])
+            answers.append(self.data[i]['answer'])
+        model_inputs = self.tokenizer(contexts, questions, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+
+        # adding answer start and end positions to model_inputs
+        start_positions = []
+        end_positions = []
+        # change char indexing to token indexing
+        for i, ans in enumerate(answers):
+            start_positions.append(model_inputs.char_to_token(i, answers[i]['answer_start']))
+            end_positions.append(model_inputs.char_to_token(i, answers[i]['answer_end'] - 1))
+
+            # if start position is None, the answer passage has been truncated
+            if (start_positions[-1] is None):
+                start_positions[-1] = self.max_length
+            if (end_positions[-1] is None):
+                end_positions[-1] = self._max_length
+
+        model_inputs.update({'start_positions': start_positions, 'end_positions': end_positions})
+
+        return model_inputs
+
 class Tokenization():
     def __init__(self, data, task: str, use_uncased: bool, max_length:int):
         self.data = data
@@ -94,20 +128,30 @@ class Tokenization():
     def __call__(self):
         # define tokenizer
         if self.use_uncased:
-            tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+            if (self.task == "QA"):
+                tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
+            else:
+                tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         else:
-            tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+            if (self.task == "QA"):
+                tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased')
+            else:
+                tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         # task
         if self.task == "NSP":
+            # print("transforms.py: Tokenization class, going to tokenize for nsp")
             nsp = NSPTokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
-            tokenized = nsp()
+            tokens = nsp()
         elif self.task == "MLM":
             mlm = MLMTokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
-            tokenized = mlm()
+            tokens = mlm()
+        elif self.task == "QA":
+            qa = QATokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
+            tokens = qa()
         else:
             pass # if we decide to fine tune more tasks
             
-        return tokenized 
+        return tokens 
 
         
 class UpperClamp():
