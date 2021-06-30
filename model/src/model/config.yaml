@@ -47,7 +47,7 @@ data:
 model:
     use_uncased: False
     task: "NSP"
-    sequence_length: 256
+    sequence_length: 512
 
     # hidden_layers: 2
     # hidden_size: 128
@@ -67,7 +67,7 @@ train:
     accelerator: 'ddp'
     seed: 123
     #epochs: 40
-    batch_size: 12
+    batch_size: 8
     lr: 0.000005 # change
     auto_lr: False
     # lr_schedule:

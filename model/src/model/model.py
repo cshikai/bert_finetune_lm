@@ -99,8 +99,9 @@ class BERTModel(pl.LightningModule):
         answers = []
         for i, seq in enumerate(input_ids):
             ids = input_ids[i][start_positions[i]:end_positions[i]+1]
+            print("\nstart position:", start_positions[i], "end position:", end_positions[i]+1)
             # answers.append(" ".join(self.tokenizer.convert_ids_to_tokens(ids)))
-            answers.append(" ".join(self.tokenizer.decode(ids)))
+            answers.append(self.tokenizer.decode(ids))
         return answers
 
     # function to get the predicted answers for a batch of input
@@ -109,9 +110,10 @@ class BERTModel(pl.LightningModule):
         for i, seq in enumerate(input_ids):
             start_position = torch.argmax(start_logits[i])
             end_position = torch.argmax(end_logits[i][start_position:])
+            print("\nstart position:", start_position, "end position:", end_position)
             ids = input_ids[i][start_position:end_position+1]
             # answers.append(" ".join(self.tokenizer.convert_ids_to_tokens(ids)))
-            answers.append(" ".join(self.tokenizer.decode(ids)))
+            answers.append(self.tokenizer.decode(ids))
         return answers
 
     # F1 Score
@@ -123,7 +125,7 @@ class BERTModel(pl.LightningModule):
     def calculate_exactmatch(self, input_ids, start_positions, end_positions, start_logits, end_logits):
         actual_ans = self.get_actual_answers(input_ids, start_positions, end_positions)
         pred_ans = self.get_pred_answers(input_ids, start_logits, end_logits)
-        print("actual_ans: ", actual_ans)
+        print("\nactual_ans: ", actual_ans)
         print("pred_ans: ", pred_ans)
         em = 0
         length = len(actual_ans)

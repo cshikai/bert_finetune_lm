@@ -117,6 +117,8 @@ class QATokenization():
 
         model_inputs.update({'start_positions': start_positions, 'end_positions': end_positions})
 
+        print("transforms.py: model_inputs:", model_inputs)
+
         return model_inputs
 
 class Tokenization():
