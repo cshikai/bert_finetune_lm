@@ -107,8 +107,8 @@ class PMCDataPipeline(object):
                         dict_cqa['answer'] = answer
                         data.append(dict_cqa)
 
-        # in case index is off by 1 or 2
-        for ind, i in enumerate(data):
+        # getting start and end indices of the answer in the context
+        for ind, pair in enumerate(data):
             answer = data[ind]['answer']
             context = data[ind]['context']
             gold_text = answer['text']
@@ -117,6 +117,7 @@ class PMCDataPipeline(object):
 
             if context[start_idx:end_idx] == gold_text:
                 data[ind]['answer']['answer_end'] = end_idx
+            # in case index is off by 1 or 2
             # When the gold label is off by one character
             elif context[start_idx-1:end_idx-1] == gold_text:
                 data[ind]['answer']['answer_start'] = start_idx - 1
