@@ -113,7 +113,7 @@ class QATokenization():
             if (start_positions[-1] is None):
                 start_positions[-1] = self.max_length
             if (end_positions[-1] is None):
-                end_positions[-1] = self._max_length
+                end_positions[-1] = self.max_length
 
         model_inputs.update({'start_positions': start_positions, 'end_positions': end_positions})
 
