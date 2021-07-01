@@ -7,17 +7,20 @@ import requests
 from transformers import BertTokenizer, BertTokenizerFast
 import itertools
 import random
+from datasets import Dataset
 
-class NSPTokenization():
-    def __init__(self, data: list, tokenizer, max_length):
+
+class NSPTransforms():
+    def __init__(self, data: list):
         self.data = data # list of lists of sections where each section is a list of sentences
-        self.tokenizer = tokenizer # either cased or uncased tokenizer
-        self.max_length = max_length
+        # self.tokenizer = tokenizer # either cased or uncased tokenizer
+        # self.max_length = max_length
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
         sentence_a = []
         sentence_b = []
         labels = []
+        dictResult = {}
         for ind, article in enumerate(self.data):
             # list of all sentences in the article
             bag = list(itertools.chain.from_iterable(article))
@@ -47,17 +50,22 @@ class NSPTokenization():
                             break
                         
         # tokenize
-        model_inputs = self.tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-        # get labels
-        model_inputs['labels'] = torch.LongTensor([labels]).T
+        # model_inputs = self.tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        # # get labels
+        # model_inputs['labels'] = torch.LongTensor([labels]).T
         
-        return model_inputs 
+        # return model_inputs 
+        dictResult['sentence_a'] = sentence_a
+        dictResult['sentence_b'] = sentence_b
+        dictResult['labels'] = labels
 
-class MLMTokenization():
-    def __init__(self, data: list, tokenizer, max_length):
+        return dictResult
+
+class MLMTransforms():
+    def __init__(self, data: list):
         self.data = data
-        self.tokenizer = tokenizer
-        self.max_length = max_length
+        # self.tokenizer = tokenizer
+        # self.max_length = max_length
     def __call__(self):
         sentence_list = []
         # convert list of articles of sections of sentences to list of sentences
@@ -65,93 +73,108 @@ class MLMTokenization():
             for section in article:
                 for sentence in section:
                     sentence_list.append(sentence)
-        
-        # tokenize
-        model_inputs = self.tokenizer(sentence_list, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-        # get labels
-        model_inputs['labels'] = model_inputs.input_ids.detach().clone()
-        ## mask
-        # random arr of floats with equal dimensions to input_ids tensor
-        rand = torch.rand(model_inputs.input_ids.shape)
-        # mask arr
-        # 101 and 102 are the SEP & CLS tokens, don't want to mask them
-        mask_arr = (rand * 0.15) * (model_inputs.input_ids != 101) * (model_inputs.input_ids != 102) * (model_inputs.input_ids != 0)
-        # assigning masked input ids with 103
-        selection = []
-        for i in range(model_inputs.input_ids.shape[0]):
-            selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
-            
-        for i in range(model_inputs.input_ids.shape[0]):
-            model_inputs.input_ids[i, selection[i]] = 103
-       
-        return model_inputs
 
-class QATokenization():
-    def __init__(self, data: list, tokenizer, max_length):
+        dictResult = {}
+        dictResult['sentence_list'] = sentence_list
+        return dictResult
+        
+        # # tokenize
+        # model_inputs = self.tokenizer(sentence_list, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        # # get labels
+        # model_inputs['labels'] = model_inputs.input_ids.detach().clone()
+        # ## mask
+        # # random arr of floats with equal dimensions to input_ids tensor
+        # rand = torch.rand(model_inputs.input_ids.shape)
+        # # mask arr
+        # # 101 and 102 are the SEP & CLS tokens, don't want to mask them
+        # mask_arr = (rand * 0.15) * (model_inputs.input_ids != 101) * (model_inputs.input_ids != 102) * (model_inputs.input_ids != 0)
+        # # assigning masked input ids with 103
+        # selection = []
+        # for i in range(model_inputs.input_ids.shape[0]):
+        #     selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
+            
+        # for i in range(model_inputs.input_ids.shape[0]):
+        #     model_inputs.input_ids[i, selection[i]] = 103
+       
+        # return model_inputs
+
+class QATransforms():
+    def __init__(self, data: list):
         self.data = data
-        self.tokenizer = tokenizer
-        self.max_length = max_length
+        # self.tokenizer = tokenizer
+        # self.max_length = max_length
     def __call__(self):
         contexts = []
         questions = []
         answers = []
+        dictResult = {}
         for i, pair in enumerate(self.data):
             contexts.append(self.data[i]['context'])
             questions.append(self.data[i]['question'])
             answers.append(self.data[i]['answer'])
-        model_inputs = self.tokenizer(contexts, questions, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
 
-        # adding answer start and end positions to model_inputs
-        start_positions = []
-        end_positions = []
-        # change char indexing to token indexing
-        for i, ans in enumerate(answers):
-            start_positions.append(model_inputs.char_to_token(i, answers[i]['answer_start']))
-            end_positions.append(model_inputs.char_to_token(i, answers[i]['answer_end'] - 1))
+        dictResult['contexts'] = contexts
+        dictResult['questions'] = questions
+        dictResult['answers'] = answers
 
-            # if start position is None, the answer passage has been truncated
-            if (start_positions[-1] is None):
-                start_positions[-1] = self.max_length
-            if (end_positions[-1] is None):
-                end_positions[-1] = self.max_length
+        return dictResult
 
-        model_inputs.update({'start_positions': start_positions, 'end_positions': end_positions})
+        # model_inputs = self.tokenizer(contexts, questions, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
 
-        return model_inputs
+        # # adding answer start and end positions to model_inputs
+        # start_positions = []
+        # end_positions = []
+        # # change char indexing to token indexing
+        # for i, ans in enumerate(answers):
+        #     start_positions.append(model_inputs.char_to_token(i, answers[i]['answer_start']))
+        #     end_positions.append(model_inputs.char_to_token(i, answers[i]['answer_end'] - 1))
 
-class Tokenization():
-    def __init__(self, data, task: str, use_uncased: bool, max_length:int):
+        #     # if start position is None, the answer passage has been truncated
+        #     if (start_positions[-1] is None):
+        #         start_positions[-1] = self.max_length
+        #     if (end_positions[-1] is None):
+        #         end_positions[-1] = self.max_length
+
+        # model_inputs.update({'start_positions': start_positions, 'end_positions': end_positions})
+
+        # return model_inputs
+
+class Transformations():
+    def __init__(self, data, task: str):
         self.data = data
         self.task = task
-        self.use_uncased = use_uncased
-        self.max_length = max_length
     def __call__(self):
         # define tokenizer
-        if self.use_uncased:
-            if (self.task == "QA"):
-                tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
-            else:
-                tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        else:
-            if (self.task == "QA"):
-                tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased')
-            else:
-                tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+        # if self.use_uncased:
+        #     tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
+        # else:
+        #     tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased')
+
+        # if self.use_uncased:
+        #     if (self.task == "QA"):
+        #         tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
+        #     else:
+        #         tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        # else:
+        #     if (self.task == "QA"):
+        #         tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased')
+        #     else:
+        #         tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         # task
         if self.task == "NSP":
             # print("transforms.py: Tokenization class, going to tokenize for nsp")
-            nsp = NSPTokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
-            tokens = nsp()
+            nsp = NSPTransforms(data=self.data)
+            transformations = nsp()
         elif self.task == "MLM":
-            mlm = MLMTokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
-            tokens = mlm()
+            mlm = MLMTransforms(data=self.data)
+            transformations = mlm()
         elif self.task == "QA":
-            qa = QATokenization(data=self.data, tokenizer=tokenizer, max_length=self.max_length)
-            tokens = qa()
+            qa = QATransforms(data=self.data)
+            transformations = qa()
         else:
             pass # if we decide to fine tune more tasks
             
-        return tokens 
+        return transformations 
 
         
 class UpperClamp():

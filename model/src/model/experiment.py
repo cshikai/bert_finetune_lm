@@ -23,6 +23,7 @@ from . import transforms
 from .config import cfg
 from .dataset import CovidDataset
 from datasets import load_metric
+from transformers import BertTokenizerFast
 
 
 
@@ -127,8 +128,6 @@ class Experiment(object):
         self.use_uncased = args.model_use_uncased
         self.max_length = args.model_sequence_length
         self.n_epochs = args.train_num_epochs
-        
-
 
     def _get_logger(self):
         logger = TensorBoardLogger(self.checkpoint_dir, name='logs')
@@ -161,9 +160,9 @@ class Experiment(object):
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
 
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False,  num_workers=self.num_workers)
 
         steps_per_epoch = len(train_dataset) // self.batch_size
         total_training_steps = self.n_epochs*steps_per_epoch
