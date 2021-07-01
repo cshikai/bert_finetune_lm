@@ -110,15 +110,18 @@ class QATokenization():
         trunc_contexts = []
 
         print(answers)
+        # print("asnwers len:", len(answers))
+        # print("context_tokens['input_ids'] len:", len(context_tokens['input_ids']))
         # print(self.tokenizer.decode(context_tokens['input_ids'][0]))
 
         for i, ans in enumerate(answers):
             start_position = context_tokens.char_to_token(i, answers[i]['answer_start'])
             end_position = context_tokens.char_to_token(i, answers[i]['answer_end']-1)
             print("answer start:", answers[i]['answer_start'])
-            print("answer end:", answers[i]['answer_end'])
+            print("answer end:", answers[i]['answer_end']-1)
             print("start position:", start_position)
             print("end position:", end_position)
+            print("end position char:", contexts[0][answers[i]['answer_end']-3])
             answer_len = end_position - start_position + 1
             answer_start = random.randint(0,100)
             answer_end = answer_start + answer_len - 1
