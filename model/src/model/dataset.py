@@ -49,23 +49,28 @@ class CovidDataset(Dataset):
         
     def __getitem__(self, batch_idx):
         # tokenize data
-        print('tokenizing data')
         data_tokenized = self.tokenize_steps(batch_idx)
- 
+
         return data_tokenized
 
 
     def __len__(self):
-        return len(self.data_loaded)
+        if self.task == "NSP":
+            return len(self.data_transformed['sentence_a'])
+        elif self.task == "MLM":
+            return len(self.data_transformed['sentence_list'])
+        elif self.task == "QA":
+            pass
+        
 
     # Choose tokenizing steps based on task
-    def tokenize_steps(self, instance):
+    def tokenize_steps(self, batch_idx):
         if self.task == "NSP":
-            data_tokenized = self.tokenize_nsp(instance)
+            data_tokenized = self.tokenize_nsp(batch_idx)
         elif self.task == "MLM":
-            data_tokenized = self.tokenize_mlm(instance)
+            data_tokenized = self.tokenize_mlm(batch_idx)
         elif self.task == "QA": 
-            data_tokenized = self.tokenize_qna(instance)
+            data_tokenized = self.tokenize_qna(batch_idx)
 
         return data_tokenized
         
