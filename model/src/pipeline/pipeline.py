@@ -100,7 +100,7 @@ class PMCDataPipeline(object):
                         if self.use_uncased:
                             context = context.lower()
                             question = question.lower()
-                            answer = answer.lower()
+                            answer['text'] = answer.lower()
                          
                         dict_cqa['context'] = context
                         dict_cqa['question'] = question
