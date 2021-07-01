@@ -109,6 +109,8 @@ class PMCDataPipeline(object):
 
         # getting start and end indices of the answer in the context
         for ind, pair in enumerate(data):
+            # Get rid of trailing/extra spaces
+            data[ind]['answer']['text'] = " ".join(data[ind]['answer']['text'].split())
             answer = data[ind]['answer']
             context = data[ind]['context']
             gold_text = answer['text']
