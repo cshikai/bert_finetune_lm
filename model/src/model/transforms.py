@@ -102,15 +102,23 @@ class QATokenization():
         
         context_tokens = self.tokenizer(contexts, return_tensors='pt', truncation=False, padding=True)
         # model_inputs = self.tokenizer(contexts, questions, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        print(context_tokens)
 
         # adding answer start and end positions to model_inputs
         start_positions = []
         end_positions = []
         trunc_contexts = []
 
+        print(answers)
+        # print(self.tokenizer.decode(context_tokens['input_ids'][0]))
+
         for i, ans in enumerate(answers):
             start_position = context_tokens.char_to_token(i, answers[i]['answer_start'])
-            end_position = context_tokens.char_to_token(i, answers[i]['answer_end'] - 1)
+            end_position = context_tokens.char_to_token(i, answers[i]['answer_end']-1)
+            print("answer start:", answers[i]['answer_start'])
+            print("answer end:", answers[i]['answer_end'])
+            print("start position:", start_position)
+            print("end position:", end_position)
             answer_len = end_position - start_position + 1
             answer_start = random.randint(0,100)
             answer_end = answer_start + answer_len - 1
@@ -124,6 +132,25 @@ class QATokenization():
             trunc_contexts.append(new_context)
             start_positions.append(answer_start)
             end_positions.append(answer_end)
+
+            # answer_len = len(ans['text'].split())
+            # print("answer len:", answer_len)
+            # start_position = context_tokens.char_to_token(i, answers[i]['answer_start'])
+            # end_position = start_position + answer_len - 1
+            # print("start position:", start_position)
+            # print("end position:", end_position)
+            # answer_start = random.randint(0,100)
+            # answer_end = answer_start + answer_len - 1
+            # context_start = start_position - answer_start
+            # context_end = end_position + random.randint(0,100)
+            # if (context_start<0):
+            #     context_start = 0
+            # if (context_end >= len(self.tokenizer.decode(context_tokens['input_ids'][i]).split())):
+            #     context_end = len(self.tokenizer.decode(context_tokens['input_ids'][i]).split()) - 1
+            # new_context = self.tokenizer.decode(context_tokens['input_ids'][i][context_start:context_end+1])
+            # trunc_contexts.append(new_context)
+            # start_positions.append(answer_start)
+            # end_positions.append(answer_end)
 
         # change char indexing to token indexing
         # for i, ans in enumerate(answers):
