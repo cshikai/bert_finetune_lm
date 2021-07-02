@@ -299,6 +299,8 @@ class BERTModel(pl.LightningModule):
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
             self.log('test_exactmatch', em, sync_dist=self.distributed)
+            f1 = self.calculate_f1(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
+            self.log('test_f1', f1, sync_dist=self.distributed)
 
         return {
             'test_loss': loss,
