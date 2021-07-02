@@ -17,8 +17,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint,LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from .model import BERTModel, Seq2Seq
-from . import transforms
+from .model import BERTModel
 from .config import cfg
 from .dataset import CovidDataset
 
@@ -146,15 +145,9 @@ class Experiment(object):
         return callbacks
 
     def run_experiment(self, task:str, model_startpt:str=None):
-        # if os.path.exists(self.checkpoint_dir):
-        #     shutil.rmtree(self.checkpoint_dir)
-
-        # os.makedirs(os.path.join(self.checkpoint_dir,'logs'), exist_ok=True)
 
         pl.seed_everything(self.seed)
 
-        ##### new #####
-        print("experiment.py: getting datasets")
         train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length)
         train_batch_sampler = BatchSampler(RandomSampler(train_dataset), batch_size=self.batch_size, drop_last = True)
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
@@ -162,7 +155,6 @@ class Experiment(object):
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
         test_batch_sampler = BatchSampler(RandomSampler(test_dataset), batch_size=self.batch_size, drop_last = True)
 
-        print("experiment.py: getting dataloaders")
         train_loader = DataLoader(dataset = train_dataset, batch_sampler = train_batch_sampler, collate_fn=train_dataset.collate_fn, num_workers=self.num_workers)
         valid_loader = DataLoader(dataset = valid_dataset, batch_sampler = valid_batch_sampler, collate_fn=valid_dataset.collate_fn, num_workers=self.num_workers)
         test_loader = DataLoader(dataset = test_dataset, batch_sampler = test_batch_sampler, collate_fn=test_dataset.collate_fn, num_workers=self.num_workers)
@@ -208,67 +200,6 @@ class Experiment(object):
         
         return best_model
 
-        # train_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"train",self.transforms,self.time_encoding_dims)
-        # valid_dataset = FlightDataset(self.datapath,self.features,self.label,self.mode3_column,self.callsign_column,"valid",self.transforms,self.time_encoding_dims)
-
-        # y_padding = train_dataset.labels_map['pad']
-        # callsign_padding = train_dataset.CALLSIGN_CHAR2IDX['_']
-        # mode3_padding = train_dataset.MODE3_CHAR2IDX['_']
-        # train_loader = DataLoader(train_dataset, collate_fn=lambda x: default_collate(x,y_padding,mode3_padding,callsign_padding),\
-        #     batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
-        # valid_loader = DataLoader(valid_dataset, collate_fn=lambda x: default_collate(x,y_padding,mode3_padding,callsign_padding),\
-        #     batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-
-        
-
-        # class_weights = {
-        #     'label_segment_count': train_dataset.get_class_weights('label_segment_count'),
-        #     'label_point_count': train_dataset.get_class_weights('label_point_count')
-        # }
-        # for batch in train_loader:
-        #     print(batch[0].shape)
-        #     print(batch[1])
-        #     # print(batch[2])
-        #     break
-        # -2 for n_class because we have two special tokens
-
-        # labels_map = train_dataset.labels_map
-        # n_callsign_tokens = len(train_dataset.CALLSIGN_CHAR2IDX)
-        # n_mode3_tokens = len(train_dataset.MODE3_CHAR2IDX)
-        # n_classes = train_dataset.n_classes
-        # distributed = self.n_gpu > 1
-        # if self.clearml_task:
-        #     self.clearml_task.connect_configuration({str(i):val for i,val in enumerate(class_weights[self.weight_by].cpu().numpy())},name='Class Weights')
-        #     self.clearml_task.connect_configuration(labels_map,name='Labels Map')
-
-        #     metas = {'Train':train_dataset.metadata.copy(),'Valid':valid_dataset.metadata.copy()}
-        #     for meta in metas.keys():
-        #         for key in ['labels','length','track_ids']:
-        #             metas[meta].pop(key)
-        #         self.clearml_task.connect_configuration(metas[meta],name='{} Metadata'.format(meta))
-
-        
-        # Run training and get the model type and case it was training on
-        # model_type, model_case = model()
-        # # get saved model
-        # model_name = "round" + str(round) + "_model"
-        # if model_type == "BertForNextSentencePrediction":
-        #     curr_model = BertForNextSentencePrediction.from_pretrained(model_case, state_dict=torch.load(model_name))
-        # elif model_type == "BertForMaskedLM":
-        #     curr_model = BertForMaskedLM.from_pretrained(model_case, state_dict=torch.load(model_name))
-        
-        # # calc accuracy on test data
-        # calc_accuracy(model=curr_model, test_loader=test_loader, device=device)
-
-        
-
-        # model = Seq2Seq(self.learning_rate, self.lr_schedule, self.hid_dim, self.n_layers, self.n_features,\
-        #     self.enc_dropout, self.dec_dropout, n_mode3_tokens,self.n_mode3_token_embedding, self.n_mode3_token_layers, n_callsign_tokens, self.n_callsign_token_embedding, self.n_callsign_token_layers,\
-        #     n_classes ,self.teacher_forcing,class_weights,self.weight_by,\
-        #     labels_map,distributed)
-       
-        
-    
     @staticmethod
     def add_experiment_args(parent_parser):
 
