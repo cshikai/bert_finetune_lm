@@ -19,7 +19,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # task = Task.init(project_name="LM Project", task_name="Fine tuning",output_uri="http://192.168.56.253:9000/minio/vsmodels/snapshots")
-    task = Task.init(project_name="BERT", task_name="Fine tuning for domain specificity")
+    task = Task.init(project_name="BERT", task_name="Fine tuning for domain specificity - without Sampler")
     model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
     pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     exp = experiment.Experiment(args, task)
     nspbest = exp.run_experiment(task='NSP', model_startpt=None)
     # exp.run_experiment(task='MLM', model_startpt=None)
-    # exp.run_experiment(task='MLM', model_startpt = nspbest)
+    exp.run_experiment(task='MLM', model_startpt = nspbest)
 
 
 

@@ -77,9 +77,14 @@ class CovidDataset(Dataset):
     # Tokenize for NSP
     def tokenize_nsp(self, batch_idx):
         # tokenize
+        # print("batch_idx:", batch_idx)
+        # print("NUMBER OF SENTENCE PAIRS FOR", self.mode, ":", len(self.data_transformed['sentence_a']))
         data_tokenized = self.tokenizer(self.data_transformed['sentence_a'][batch_idx], self.data_transformed['sentence_b'][batch_idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         # post tokenize
+        for k, v in data_tokenized.items():
+            data_tokenized[k] = torch.reshape(v, (-1,))
         data_tokenized['labels'] = torch.LongTensor([self.data_transformed['labels'][batch_idx]]).T
+        # print("tokenized nsp:", data_tokenized)
         return data_tokenized
 
      # Tokenize for MLM
@@ -87,6 +92,8 @@ class CovidDataset(Dataset):
         # tokenize
         data_tokenized = self.tokenizer(self.data_transformed['sentence_list'][batch_idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         # post tokenize
+        for k, v in data_tokenized.items():
+            data_tokenized[k] = torch.reshape(v, (-1,))
         # get labels
         data_tokenized['labels'] = data_tokenized.input_ids.detach().clone()
         ## mask
