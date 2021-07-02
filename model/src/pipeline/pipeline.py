@@ -110,24 +110,27 @@ class PMCDataPipeline(object):
         # getting start and end indices of the answer in the context
         for ind, pair in enumerate(data):
             # Get rid of trailing/extra spaces
+            # if answer begins with a whitespace, increase answer_start by 1
+            if (data[ind]['answer']['text'][0] == " "):
+                data[ind]['answer']['answer_start'] += 1
             data[ind]['answer']['text'] = " ".join(data[ind]['answer']['text'].split())
             answer = data[ind]['answer']
             context = data[ind]['context']
-            gold_text = answer['text']
+            gold_text = " ".join(answer['text'].split())
             start_idx = answer['answer_start']
             end_idx = start_idx + len(gold_text)
 
-            if context[start_idx:end_idx] == gold_text:
-                data[ind]['answer']['answer_end'] = end_idx
+            if (" ".join(context[start_idx:end_idx].split()) == gold_text):
+                data[ind]['answer']['answer_end'] = end_idx - 1
             # in case index is off by 1 or 2
             # When the gold label is off by one character
-            elif context[start_idx-1:end_idx-1] == gold_text:
+            elif (" ".join(context[start_idx-1:end_idx-1].split()) == gold_text):
                 data[ind]['answer']['answer_start'] = start_idx - 1
-                data[ind]['answer']['answer_end'] = end_idx - 1   
+                data[ind]['answer']['answer_end'] = end_idx - 2 
             # When the gold label is off by two characters
-            elif context[start_idx-2:end_idx-2] == gold_text:
+            elif (" ".join(context[start_idx-2:end_idx-2].split()) == gold_text):
                 data[ind]['answer']['answer_start'] = start_idx - 2
-                data[ind]['answer']['answer_end'] = end_idx - 2     
+                data[ind]['answer']['answer_end'] = end_idx - 3     
 
         return data
 

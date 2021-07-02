@@ -5,6 +5,7 @@ import copy
 
 import numpy as np
 import torch
+import random
 from torch.utils.data import Dataset
 # from datasets import Dataset
 from torchvision.transforms import Compose
@@ -28,10 +29,10 @@ class CovidDataset(Dataset):
         self.max_length = max_length
         self.task = task 
 
-        if task == "QA":
+        if self.task == "QA":
             # path for QA
             path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
-        elif task == "NSP" or task == "MLM":
+        elif self.task == "NSP" or task == "MLM":
             # paths for nsp and mlm
             path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
         # print("dataset.py: open data file in pipeline folder")
@@ -43,6 +44,14 @@ class CovidDataset(Dataset):
         transformation = transforms.Transformations(data=self.data_loaded, task=self.task)
         # print("dataset.py: tokenizing")
         self.data_transformed = transformation()
+
+        if (self.task == "QA"):
+            for i,ans in enumerate(self.data_transformed['answers']):
+                if (('answer_end' not in ans.keys()) or ('answer_start' not in ans.keys())):
+                    self.data_transformed['contexts'].pop(i)
+                    self.data_transformed['questions'].pop(i)
+                    self.data_transformed['answers'].pop(i)
+
         self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert-base-cased')
         
         
@@ -50,7 +59,6 @@ class CovidDataset(Dataset):
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
         data_tokenized = self.tokenize_steps(idx)
-
         return data_tokenized
 
 
@@ -60,7 +68,8 @@ class CovidDataset(Dataset):
         elif self.task == "MLM":
             return len(self.data_transformed['sentence_list'])
         elif self.task == "QA":
-            pass
+            return len(self.data_transformed['questions'])
+    
         
 
     # Choose tokenizing steps based on task
@@ -106,25 +115,59 @@ class CovidDataset(Dataset):
         return data_tokenized
         
 
-     # Tokenize for QNA
+     # Tokenize for QNA (for one question-answer pair)
     def tokenize_qna(self, idx):
-        # tokenize
-        data_tokenized = self.tokenizer(self.data_transformed['contexts'][idx], self.data_transformed['questions'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-        # post tokenize
-        start_positions = []
-        end_positions = []
-        # change char indexing to token indexing
-        for i, ans in enumerate(self.data_transformed['answers'][idx]):
-            start_positions.append(data_tokenized.char_to_token(i, self.data_transformed['answers'][i]['answer_start'][idx]))
-            end_positions.append(data_tokenized.char_to_token(i, self.data_transformed['answers'][i]['answer_end'][idx] - 1))
+        # edit the context so the answer will always be in the context
+        context = self.data_transformed['contexts'][idx]
+        context_tokens = self.tokenizer(context, return_tensors='pt', truncation=False, padding=False)
+        
+        answer = self.data_transformed['answers'][idx]
+        # print("answer:", answer)
+        start_token = context_tokens.char_to_token(answer['answer_start'])
+        end_token = context_tokens.char_to_token(answer['answer_end'])
+        # print("answer end char:", context[answer['answer_end']])
+        # print("answer start:", answer['answer_start'])
+        # print("answer end (last char inclusive):", answer['answer_end'])
+        # print("answer start token position:", start_token)
+        # print("answer end token position:", end_token)
+        
+        # getting the new context and answer token positions
+        # the below are token-wise, so excluding whitespace (note: token-wise != word-wise)
+        answer_len = end_token - start_token + 1 # token count
+        max_dist = start_token-1 if start_token<=80 else 80
+        dist = random.randint(0, max_dist)
+        answer_start = dist + 1
+        answer_end = answer_start + answer_len - 1
+        context_start = start_token - dist
+        context_end = end_token + random.randint(0, 80)
+        # if the context start and end token positions exceed the valid range
+        if (context_start <= 0):
+            context_start = 1
+        if (context_end >= len(context_tokens['input_ids'][0])-1):
+            context_end = len(context_tokens['input_ids'][0])-2
 
-            # if start position is None, the answer passage has been truncated
-            if (start_positions[-1] is None):
-                start_positions[-1] = self.max_length
-            if (end_positions[-1] is None):
-                end_positions[-1] = self.max_length
+        new_context = self.tokenizer.decode(context_tokens['input_ids'][0][context_start:context_end+1])
+        # print("new_context:", new_context)
+        # print("new context size:", len(new_context.split()))
 
-        data_tokenized.update({'start_positions': start_positions, 'end_positions': end_positions})
+        # tokenize using new context
+        data_tokenized = self.tokenizer(new_context, self.data_transformed['questions'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        
+        # adding start and end position of the answer to data_tokenized
+        # start_position = data_tokenized.char_to_token(answer_start)
+        # end_position = data_tokenized.char_to_token(answer_end)
+        # print('answer positions in new context:', answer_start, answer_end)
+
+        # if start/end position is None, the answer passage has been truncated
+        # if (start_position is None):
+        #     start_position = self.max_length
+        # if (end_position is None):
+        #     end_position = self.max_length
+
+        data_tokenized.update({'start_positions': torch.LongTensor([answer_start]), 'end_positions': torch.LongTensor([answer_end])})
+        
+        # output should have input_ids, token_type_ids, attention_mask, start_positions, end_positions
+        # print("\ndataset.py data_tokenized size:", data_tokenized.size())
         return data_tokenized
 
     @staticmethod
