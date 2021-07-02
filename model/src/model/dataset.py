@@ -47,9 +47,9 @@ class CovidDataset(Dataset):
         
         
         
-    def __getitem__(self, batch_idx):
-        # tokenize data
-        data_tokenized = self.tokenize_steps(batch_idx)
+    def __getitem__(self, idx):
+        # tokenize data (one sample in the entire dataset (so one seq), not one batch)
+        data_tokenized = self.tokenize_steps(idx)
 
         return data_tokenized
 
@@ -64,28 +64,28 @@ class CovidDataset(Dataset):
         
 
     # Choose tokenizing steps based on task
-    def tokenize_steps(self, batch_idx):
+    def tokenize_steps(self, idx):
         if self.task == "NSP":
-            data_tokenized = self.tokenize_nsp(batch_idx)
+            data_tokenized = self.tokenize_nsp(idx)
         elif self.task == "MLM":
-            data_tokenized = self.tokenize_mlm(batch_idx)
+            data_tokenized = self.tokenize_mlm(idx)
         elif self.task == "QA": 
-            data_tokenized = self.tokenize_qna(batch_idx)
+            data_tokenized = self.tokenize_qna(idx)
 
         return data_tokenized
         
     # Tokenize for NSP
-    def tokenize_nsp(self, batch_idx):
+    def tokenize_nsp(self, idx):
         # tokenize
-        data_tokenized = self.tokenizer(self.data_transformed['sentence_a'][batch_idx], self.data_transformed['sentence_b'][batch_idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        data_tokenized = self.tokenizer(self.data_transformed['sentence_a'][idx], self.data_transformed['sentence_b'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         # post tokenize
-        data_tokenized['labels'] = torch.LongTensor([self.data_transformed['labels'][batch_idx]]).T
+        data_tokenized['labels'] = torch.LongTensor([self.data_transformed['labels'][idx]]).T
         return data_tokenized
 
      # Tokenize for MLM
-    def tokenize_mlm(self, batch_idx):
+    def tokenize_mlm(self, idx):
         # tokenize
-        data_tokenized = self.tokenizer(self.data_transformed['sentence_list'][batch_idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        data_tokenized = self.tokenizer(self.data_transformed['sentence_list'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         # post tokenize
         # get labels
         data_tokenized['labels'] = data_tokenized.input_ids.detach().clone()
@@ -107,16 +107,16 @@ class CovidDataset(Dataset):
         
 
      # Tokenize for QNA
-    def tokenize_qna(self, batch_idx):
+    def tokenize_qna(self, idx):
         # tokenize
-        data_tokenized = self.tokenizer(self.data_transformed['contexts'][batch_idx], self.data_transformed['questions'][batch_idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        data_tokenized = self.tokenizer(self.data_transformed['contexts'][idx], self.data_transformed['questions'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         # post tokenize
         start_positions = []
         end_positions = []
         # change char indexing to token indexing
-        for i, ans in enumerate(self.data_transformed['answers'][batch_idx]):
-            start_positions.append(data_tokenized.char_to_token(i, self.data_transformed['answers'][i]['answer_start'][batch_idx]))
-            end_positions.append(data_tokenized.char_to_token(i, self.data_transformed['answers'][i]['answer_end'][batch_idx] - 1))
+        for i, ans in enumerate(self.data_transformed['answers'][idx]):
+            start_positions.append(data_tokenized.char_to_token(i, self.data_transformed['answers'][i]['answer_start'][idx]))
+            end_positions.append(data_tokenized.char_to_token(i, self.data_transformed['answers'][i]['answer_end'][idx] - 1))
 
             # if start position is None, the answer passage has been truncated
             if (start_positions[-1] is None):
@@ -128,9 +128,14 @@ class CovidDataset(Dataset):
         return data_tokenized
 
     @staticmethod
-    def collate_fn(batch):
+    def collate_fn(batch_list):
+        # batch_list is a list of dicts, where one dict rep one seq, so need to convert the format into what the model wants
+        batch = batch_list[0]
+        for i in range(1, len(batch_list)):
+            for k, v in batch_list[i].items():
+                batch[k] = torch.cat((batch[k], v), 0)
+        return batch
 
-        return {k: torch.tensor(v) for k,v in batch[0].items()}
 
     # other methods
 
