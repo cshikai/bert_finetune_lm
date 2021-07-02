@@ -12,7 +12,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, BatchSampler, RandomSampler
+from torch.utils.data import DataLoader, BatchSampler, SequentialSampler
+from transformers import BertForMaskedLM, BertForNextSentencePrediction
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint,LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -21,7 +22,8 @@ from .model import BERTModel, Seq2Seq
 from . import transforms
 from .config import cfg
 from .dataset import CovidDataset
-
+from datasets import load_metric
+from transformers import BertTokenizerFast
 
 
 
@@ -155,15 +157,19 @@ class Experiment(object):
         ##### new #####
         # print("experiment.py: getting datasets")
         train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length)
-        train_batch_sampler = BatchSampler(RandomSampler(train_dataset), batch_size=self.batch_size, drop_last = False)
+        # train_batch_sampler = BatchSampler(SequentialSampler(train_dataset), batch_size=self.batch_size, drop_last = True)
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
-        valid_batch_sampler = BatchSampler(RandomSampler(valid_dataset), batch_size=self.batch_size, drop_last = False)
+        # valid_batch_sampler = BatchSampler(SequentialSampler(valid_dataset), batch_size=self.batch_size, drop_last = True)
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
-        test_batch_sampler = BatchSampler(RandomSampler(test_dataset), batch_size=self.batch_size, drop_last = False)
+        # test_batch_sampler = BatchSampler(SequentialSampler(test_dataset), batch_size=self.batch_size, drop_last = True)
 
-        train_loader = DataLoader(dataset = train_dataset, batch_sampler = train_batch_sampler, collate_fn=train_dataset.collate_fn, num_workers=self.num_workers)
-        valid_loader = DataLoader(dataset = valid_dataset, batch_sampler = valid_batch_sampler, collate_fn=valid_dataset.collate_fn, num_workers=self.num_workers)
-        test_loader = DataLoader(dataset = test_dataset, batch_sampler = test_batch_sampler, collate_fn=test_dataset.collate_fn, num_workers=self.num_workers)
+        print('dataloader')
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=False)
+        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
+        # train_loader = DataLoader(dataset = train_dataset, batch_sampler = train_batch_sampler, collate_fn=train_dataset.collate_fn, num_workers=self.num_workers)
+        # valid_loader = DataLoader(dataset = valid_dataset, batch_sampler = valid_batch_sampler, collate_fn=valid_dataset.collate_fn, num_workers=self.num_workers)
+        # test_loader = DataLoader(dataset = test_dataset, batch_sampler = test_batch_sampler, collate_fn=test_dataset.collate_fn, num_workers=self.num_workers)
 
         steps_per_epoch = len(train_dataset) // self.batch_size
         total_training_steps = self.n_epochs*steps_per_epoch
