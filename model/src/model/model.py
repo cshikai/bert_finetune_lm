@@ -15,11 +15,7 @@ from torchmetrics import Accuracy, F1
 import torch.nn.functional as F
 
 from .config import cfg
-from .encoder import Encoder
-from .decoder import Decoder
-from .attention import Attention
-from .id_encoder import IdEncoder
-from . import results
+# from . import results
 
 
 class BERTModel(pl.LightningModule):
