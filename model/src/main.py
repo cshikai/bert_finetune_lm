@@ -39,8 +39,8 @@ if __name__ == '__main__':
     # #run pipeline to extract data from raw data
     # annotated_data_pipe()
 
-    # PMC_data_pipe = pipeline.PMCDataPipeline(args)
-    # PMC_data_pipe()
+    PMC_data_pipe = pipeline.PMCDataPipeline(args)
+    PMC_data_pipe()
 
     
 
@@ -49,10 +49,10 @@ if __name__ == '__main__':
     # exp.create_torchscript_model('k=0-epoch=0.ckpt')
     # print("in main.py")
     # exp = experiment.Experiment(args, clearml_task)
-    exp = experiment.Experiment(args, task)
-    nspbest = exp.run_experiment(task='NSP', model_startpt=None)
-    mlmbest = exp.run_experiment(task='MLM', model_startpt=nspbest)
-    exp.run_experiment(task='QA', model_startpt=mlmbest)
+    # exp = experiment.Experiment(args, task)
+    # nspbest = exp.run_experiment(task='NSP', model_startpt=None)
+    # mlmbest = exp.run_experiment(task='MLM', model_startpt=nspbest)
+    # exp.run_experiment(task='QA', model_startpt=mlmbest)
     # exp.run_experiment(task='MLM', model_startpt = nspbest)
 
 
