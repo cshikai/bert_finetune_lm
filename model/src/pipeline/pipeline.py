@@ -28,7 +28,7 @@ class PMCDataPipeline(object):
         # Download cleaned data from gdrive
         #raw_url = 'https://drive.google.com/uc?id=1yUVHF8Lzvi9gY3YNMjM-n7hlJR7SaG7A' #old url
         # raw_url = 'https://drive.google.com/uc?id=1nq-5XYJ-qEe_WAZDOJuOzQGNbx9P5Wuu'
-        output = 'data_cleaned.json' 
+        output = 'pipeline/data_cleaned.json' 
         # gdown.download(raw_url, output, quiet=False)
         with open(output) as f:
             data = json.load(f)
@@ -63,7 +63,7 @@ class PMCDataPipeline(object):
     def qna_clean(self):
         # Download data
         # raw_url = 'https://drive.google.com/uc?id=1SJibr9KlCO89IQiZVMaVum9-iTb27r_s'
-        output = 'COVID-QA.json'
+        output = 'pipeline/COVID-QA.json'
         # gdown.download(raw_url, output, quiet=False)
         with open(output) as f:
             data = json.load(f)
