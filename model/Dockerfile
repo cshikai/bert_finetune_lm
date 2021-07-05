@@ -20,6 +20,7 @@ RUN pip install --upgrade pip
 ADD requirements.txt .
 RUN python -m pip install -r requirements.txt --ignore-installed
 RUN pip install jupyter
+# RUN python -m nltk.downloader -d /usr/local/share/nltk_data_all
 # RUN python -m pip install "dask[dataframe]"
 # RUN pip install fastparquet
 # ADD /src /src
