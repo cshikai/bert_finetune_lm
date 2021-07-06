@@ -49,8 +49,8 @@ class CovidDataset(Dataset):
                     self.data_transformed['questions'].pop(i)
                     self.data_transformed['answers'].pop(i)
 
-        # self.tokenizer = BertTokenizerFast.from_pretrained('bert_cached/bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert_cached/bert-base-cased')
-        self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert-base-cased')
+        self.tokenizer = BertTokenizerFast.from_pretrained('bert_cached/bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert_cached/bert-base-cased')
+        # self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert-base-cased')
 
         
         
