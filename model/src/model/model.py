@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import pytorch_lightning as pl
 import pandas as pd
 from torch.utils.data import DataLoader
-from transformers import BertForMaskedLM, BertForNextSentencePrediction, BertForQuestionAnswering, BertTokenizerFast, AdamW, get_scheduler
+from transformers import BertForPreTraining, BertForQuestionAnswering, BertTokenizerFast, AdamW, get_scheduler
 from datasets import load_metric
 from torchmetrics import Accuracy, F1
 import torch.nn.functional as F
@@ -35,20 +35,16 @@ class BERTModel(pl.LightningModule):
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
         if (self.model_startpoint is None):
-            if (self.task == "NSP"):
-                self.bert = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase)
-            elif (self.task == "MLM"):
-                self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase)
+            if (self.task == "PRETRAIN"):
+                self.bert = BertForPreTraining.from_pretrained(self.bert_case_uncase)
             elif (self.task == "QA"):
                 self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase)
                 self.tokenizer = BertTokenizerFast.from_pretrained(self.bert_case_uncase)
         # start training the model from previously trained model which was saved
         else:
-            if (self.task == "NSP"):
-                self.bert = BertForNextSentencePrediction.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
-                    # self.model = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint, map_location='cpu')) #to load on cpu
-            elif (self.task == "MLM"):
-                self.bert = BertForMaskedLM.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+            if (self.task == "PRETRAIN"):
+                self.bert = BertForPreTraining.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+                    # self.model = BertForPreTraining.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint, map_location='cpu')) #to load on cpu
             elif (self.task == "QA"):
                 self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
                 self.tokenizer = BertTokenizerFast.from_pretrained(self.bert_case_uncase)
@@ -149,14 +145,14 @@ class BERTModel(pl.LightningModule):
         em /= length
         return em
 
-    def forward(self, input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids):
+    def forward(self, input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids):
         """
         Forward propagation of one batch.
         """
         if (self.task == "QA"):
             output = self.bert(input_ids=input_ids, attention_mask=attention_mask, start_positions=start_positions, end_positions=end_positions)
         else:
-            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels, token_type_ids=token_type_ids)
+            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels, next_sentence_label=next_sentence_label, token_type_ids=token_type_ids)
 
         return output
 
@@ -167,32 +163,36 @@ class BERTModel(pl.LightningModule):
         # calls forward, loss function, accuracy function, perplexity function
         # decide what happens to one batch of data here
 
+        # for pretrain: need input_ids, attention_mask, token_type_ids, labels (for MLM), next_sentence_label (for NSP)
+
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
         token_type_ids = None
         labels = None
+        next_sentence_label = None
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
-        elif self.task == "NSP":
+        elif self.task == "PRETRAIN":
             token_type_ids = batch['token_type_ids']
             labels = batch['labels']
-        else:
-            labels = batch['labels']
+            next_sentence_label = batch["next_sentence_label"]
+        
 
         # call forward
-        output = self(input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids)
+        output = self(input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids)
         loss = output.loss
         
         # log metrices
         self.log('train_loss', loss, sync_dist=self.distributed)
-        if (self.task == "NSP"):
-            accuracy = self.calculate_accuracy(output.logits, labels)
+        if (self.task == "PRETRAIN"):
+            # For NSP
+            accuracy = self.calculate_accuracy(output.seq_relationship_logits, next_sentence_label)
             self.log('train_acc', accuracy, sync_dist=self.distributed)
-        elif (self.task == "MLM"):
-            perplexity = self.calculate_perplexity(output.logits, labels)
+            # For MLM
+            perplexity = self.calculate_perplexity(output.prediction_logits, labels)
             self.log('train_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
@@ -213,19 +213,20 @@ class BERTModel(pl.LightningModule):
         attention_mask = batch['attention_mask']
         token_type_ids = None
         labels = None
+        next_sentence_label = None
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
-        elif self.task == "NSP":
+        elif self.task == "PRETRAIN":
             token_type_ids = batch['token_type_ids']
             labels = batch['labels']
-        else:
-            labels = batch['labels']
+            next_sentence_label = batch["next_sentence_label"]
+        
 
         # call forward
-        output = self(input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids)
+        output = self(input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids)
         loss = output.loss
 
         # log metrices
@@ -233,12 +234,13 @@ class BERTModel(pl.LightningModule):
         perplexity = 0
         em = 0
         self.log('val_loss', loss, sync_dist=self.distributed)
-        if (self.task == "NSP"):
-            accuracy = self.calculate_accuracy(output.logits, labels)
-            self.log('val_acc', accuracy, sync_dist=self.distributed)
-        elif (self.task == "MLM"):
-            perplexity = self.calculate_perplexity(output.logits, labels)
-            self.log('val_perplex', perplexity, sync_dist=self.distributed)
+        if (self.task == "PRETRAIN"):
+            # For NSP
+            accuracy = self.calculate_accuracy(output.seq_relationship_logits, next_sentence_label)
+            self.log('train_acc', accuracy, sync_dist=self.distributed)
+            # For MLM
+            perplexity = self.calculate_perplexity(output.prediction_logits, labels)
+            self.log('train_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
             self.log('val_exactmatch', em, sync_dist=self.distributed)
@@ -266,19 +268,20 @@ class BERTModel(pl.LightningModule):
         attention_mask = batch['attention_mask']
         token_type_ids = None
         labels = None
+        next_sentence_label = None
         start_positions = None
         end_positions = None
         if (self.task == "QA"):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
-        elif self.task == "NSP":
+        elif self.task == "PRETRAIN":
             token_type_ids = batch['token_type_ids']
             labels = batch['labels']
-        else:
-            labels = batch['labels']
+            next_sentence_label = batch["next_sentence_label"]
+        
 
         # call forward
-        output = self(input_ids, attention_mask, labels, start_positions, end_positions, token_type_ids)
+        output = self(input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids)
         loss = output.loss
         
         # log metrices
@@ -286,12 +289,13 @@ class BERTModel(pl.LightningModule):
         perplexity = 0
         em = 0
         self.log('test_loss', loss, sync_dist=self.distributed)
-        if (self.task == "NSP"):
-            accuracy = self.calculate_accuracy(output.logits, labels)
-            self.log('test_acc', accuracy, sync_dist=self.distributed)
-        elif (self.task == "MLM"):
-            perplexity = self.calculate_perplexity(output.logits, labels)
-            self.log('test_perplex', perplexity, sync_dist=self.distributed)
+        if (self.task == "PRETRAIN"):
+            # For NSP
+            accuracy = self.calculate_accuracy(output.seq_relationship_logits, next_sentence_label)
+            self.log('train_acc', accuracy, sync_dist=self.distributed)
+            # For MLM
+            perplexity = self.calculate_perplexity(output.prediction_logits, labels)
+            self.log('train_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
             self.log('test_exactmatch', em, sync_dist=self.distributed)

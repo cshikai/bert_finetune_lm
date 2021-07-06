@@ -50,10 +50,8 @@ if __name__ == '__main__':
     # print("in main.py")
     # exp = experiment.Experiment(args, clearml_task)
     # exp = experiment.Experiment(args, task)
-    # nspbest = exp.run_experiment(task='NSP', model_startpt=None)
-    # mlmbest = exp.run_experiment(task='MLM', model_startpt=nspbest)
-    # exp.run_experiment(task='QA', model_startpt=mlmbest)
-    # exp.run_experiment(task='MLM', model_startpt = nspbest)
+    # pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
+    # exp.run_experiment(task='QA', model_startpt=pretrain_best)
 
 
 

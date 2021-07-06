@@ -220,9 +220,9 @@ class Experiment(object):
 
         return parser
 
-    @staticmethod
-    def create_torchscript_model(model_name):
-        model = Seq2Seq.load_from_checkpoint(os.path.join(cfg['train']['checkpoint_dir'],model_name))
-        script = model.to_torchscript()
-        torch.jit.save(script, os.path.join(cfg['train']['checkpoint_dir'],"model.pt"))
+    # @staticmethod
+    # def create_torchscript_model(model_name):
+    #     model = Seq2Seq.load_from_checkpoint(os.path.join(cfg['train']['checkpoint_dir'],model_name))
+    #     script = model.to_torchscript()
+    #     torch.jit.save(script, os.path.join(cfg['train']['checkpoint_dir'],"model.pt"))
     
