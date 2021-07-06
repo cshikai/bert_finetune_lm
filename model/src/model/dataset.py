@@ -31,7 +31,7 @@ class CovidDataset(Dataset):
         if self.task == "QA":
             # path for QA
             path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
-        elif self.task == "NSP" or task == "MLM":
+        elif self.task == "PRETRAIN":
             # paths for nsp and mlm
             path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
 
