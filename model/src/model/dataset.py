@@ -62,40 +62,35 @@ class CovidDataset(Dataset):
 
 
     def __len__(self):
-        if self.task == "NSP":
+        if self.task == "PRETRAIN":
             return len(self.data_transformed['sentence_a'])
-        elif self.task == "MLM":
-            return len(self.data_transformed['sentence_list'])
+        # if self.task == "NSP":
+        #     return len(self.data_transformed['sentence_a'])
+        # elif self.task == "MLM":
+        #     return len(self.data_transformed['sentence_list'])
         elif self.task == "QA":
             return len(self.data_transformed['questions'])
     
     
     # Choose tokenizing steps based on task
     def tokenize_steps(self, idx):
-        if self.task == "NSP":
-            data_tokenized = self.tokenize_nsp(idx)
-        elif self.task == "MLM":
-            data_tokenized = self.tokenize_mlm(idx)
+        if self.task == "PRETRAIN":
+            data_tokenized = self.tokenize_pretrain(idx)
+        # if self.task == "NSP":
+        #     data_tokenized = self.tokenize_nsp(idx)
+        # elif self.task == "MLM":
+        #     data_tokenized = self.tokenize_mlm(idx)
         elif self.task == "QA": 
             data_tokenized = self.tokenize_qna(idx)
 
         return data_tokenized
-        
-    # Tokenize for NSP
-    def tokenize_nsp(self, idx):
-        # tokenize
-        data_tokenized = self.tokenizer(self.data_transformed['sentence_a'][idx], self.data_transformed['sentence_b'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-        # post tokenize
-        data_tokenized['labels'] = torch.LongTensor([self.data_transformed['labels'][idx]]).T
-        return data_tokenized
 
-     # Tokenize for MLM
-    def tokenize_mlm(self, idx):
-        # tokenize
-        data_tokenized = self.tokenizer(self.data_transformed['sentence_list'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-        # post tokenize
-        # get labels
+    def tokenize_pretrain(self, idx):
+        data_tokenized = self.tokenizer(self.data_transformed['sentence_a'][idx], self.data_transformed['sentence_b'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        # mlm label
         data_tokenized['labels'] = data_tokenized.input_ids.detach().clone()
+        # nsp label
+        data_tokenized['next_sentence_label'] = torch.LongTensor([self.data_transformed['labels'][idx]]).T
         ## mask
         # random arr of floats with equal dimensions to input_ids tensor
         rand = torch.rand(data_tokenized.input_ids.shape)
@@ -111,6 +106,37 @@ class CovidDataset(Dataset):
             data_tokenized.input_ids[i, selection[i]] = 103
         
         return data_tokenized
+
+    # Tokenize for NSP
+    # def tokenize_nsp(self, idx):
+    #     # tokenize
+    #     data_tokenized = self.tokenizer(self.data_transformed['sentence_a'][idx], self.data_transformed['sentence_b'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+    #     # post tokenize
+    #     data_tokenized['labels'] = torch.LongTensor([self.data_transformed['labels'][idx]]).T
+    #     return data_tokenized
+
+    #  # Tokenize for MLM
+    # def tokenize_mlm(self, idx):
+    #     # tokenize
+    #     data_tokenized = self.tokenizer(self.data_transformed['sentence_list'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+    #     # post tokenize
+    #     # get labels
+    #     data_tokenized['labels'] = data_tokenized.input_ids.detach().clone()
+    #     ## mask
+    #     # random arr of floats with equal dimensions to input_ids tensor
+    #     rand = torch.rand(data_tokenized.input_ids.shape)
+    #     # mask arr
+    #     # 101 and 102 are the SEP & CLS tokens, don't want to mask them
+    #     mask_arr = (rand * 0.15) * (data_tokenized.input_ids != 101) * (data_tokenized.input_ids != 102) * (data_tokenized.input_ids != 0)
+    #     # assigning masked input ids with 103
+    #     selection = []
+    #     for i in range(data_tokenized.input_ids.shape[0]):
+    #         selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
+            
+    #     for i in range(data_tokenized.input_ids.shape[0]):
+    #         data_tokenized.input_ids[i, selection[i]] = 103
+        
+    #     return data_tokenized
         
 
      # Tokenize for QNA (for one question-answer pair)

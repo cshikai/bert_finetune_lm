@@ -9,8 +9,7 @@ import itertools
 import random
 from datasets import Dataset
 
-
-class NSPTransforms():
+class PretrainTransforms():
     def __init__(self, data: list):
         self.data = data # list of lists of sections where each section is a list of sentences
         # self.tokenizer = tokenizer # either cased or uncased tokenizer
@@ -61,42 +60,93 @@ class NSPTransforms():
 
         return dictResult
 
-class MLMTransforms():
-    def __init__(self, data: list):
-        self.data = data
-        # self.tokenizer = tokenizer
-        # self.max_length = max_length
-    def __call__(self):
-        sentence_list = []
-        # convert list of articles of sections of sentences to list of sentences
-        for article in self.data:
-            for section in article:
-                for sentence in section:
-                    sentence_list.append(sentence)
-
-        dictResult = {}
-        dictResult['sentence_list'] = sentence_list
-        return dictResult
+# class NSPTransforms():
+#     def __init__(self, data: list):
+#         self.data = data # list of lists of sections where each section is a list of sentences
+#         # self.tokenizer = tokenizer # either cased or uncased tokenizer
+#         # self.max_length = max_length
+#     def __call__(self):
+#         # print("transforms.py: in NSPTokenization class")
+#         sentence_a = []
+#         sentence_b = []
+#         labels = []
+#         dictResult = {}
+#         for ind, article in enumerate(self.data):
+#             # list of all sentences in the article
+#             bag = list(itertools.chain.from_iterable(article))
+#             bag_size = len(bag)
+#             # output for each article should be a dict with the keys 'sentence_a', 'sentence_b', 'labels', whose values are the corr lists
+#             for i, section in enumerate(article): # for each section in one article
+#                 section_size = len(section)
+#                 if (section_size<=1):
+#                     continue
+#                 else:
+#                     for j, sent in enumerate(section): # for each sentence in one section
+#                         if (j <= section_size-2):
+#                             sentence_a.append(sent)
+#                             if (random.random() >= 0.5):
+#                                 # sentence_b is the correct next sentence after sentence_a
+#                                 sentence_b.append(section[j+1])
+#                                 labels.append(0)
+#                             else:
+#                                 # sentence_b is the wrong next sentence after sentence_a
+#                                 rand_sent = sent
+#                                 while (rand_sent == sent):
+#                                     randi = random.randint(0, bag_size-1)
+#                                     rand_sent = bag[randi]
+#                                 sentence_b.append(rand_sent)
+#                                 labels.append(1)
+#                         else: # end of section reached
+#                             break
+                        
+#         # tokenize
+#         # model_inputs = self.tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+#         # # get labels
+#         # model_inputs['labels'] = torch.LongTensor([labels]).T
         
-        # # tokenize
-        # model_inputs = self.tokenizer(sentence_list, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-        # # get labels
-        # model_inputs['labels'] = model_inputs.input_ids.detach().clone()
-        # ## mask
-        # # random arr of floats with equal dimensions to input_ids tensor
-        # rand = torch.rand(model_inputs.input_ids.shape)
-        # # mask arr
-        # # 101 and 102 are the SEP & CLS tokens, don't want to mask them
-        # mask_arr = (rand * 0.15) * (model_inputs.input_ids != 101) * (model_inputs.input_ids != 102) * (model_inputs.input_ids != 0)
-        # # assigning masked input ids with 103
-        # selection = []
-        # for i in range(model_inputs.input_ids.shape[0]):
-        #     selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
+#         # return model_inputs 
+#         dictResult['sentence_a'] = sentence_a
+#         dictResult['sentence_b'] = sentence_b
+#         dictResult['labels'] = labels
+
+#         return dictResult
+
+# class MLMTransforms():
+#     def __init__(self, data: list):
+#         self.data = data
+#         # self.tokenizer = tokenizer
+#         # self.max_length = max_length
+#     def __call__(self):
+#         sentence_list = []
+#         # convert list of articles of sections of sentences to list of sentences
+#         for article in self.data:
+#             for section in article:
+#                 for sentence in section:
+#                     sentence_list.append(sentence)
+
+#         dictResult = {}
+#         dictResult['sentence_list'] = sentence_list
+#         return dictResult
+        
+#         # # tokenize
+#         # model_inputs = self.tokenizer(sentence_list, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+#         # # get labels
+#         # model_inputs['labels'] = model_inputs.input_ids.detach().clone()
+#         # ## mask
+#         # # random arr of floats with equal dimensions to input_ids tensor
+#         # rand = torch.rand(model_inputs.input_ids.shape)
+#         # # mask arr
+#         # # 101 and 102 are the SEP & CLS tokens, don't want to mask them
+#         # mask_arr = (rand * 0.15) * (model_inputs.input_ids != 101) * (model_inputs.input_ids != 102) * (model_inputs.input_ids != 0)
+#         # # assigning masked input ids with 103
+#         # selection = []
+#         # for i in range(model_inputs.input_ids.shape[0]):
+#         #     selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
             
-        # for i in range(model_inputs.input_ids.shape[0]):
-        #     model_inputs.input_ids[i, selection[i]] = 103
+#         # for i in range(model_inputs.input_ids.shape[0]):
+#         #     model_inputs.input_ids[i, selection[i]] = 103
        
-        # return model_inputs
+#         # return model_inputs
 
 class QATransforms():
     def __init__(self, data: list):
@@ -161,13 +211,16 @@ class Transformations():
         #     else:
         #         tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         # task
-        if self.task == "NSP":
-            # print("transforms.py: Tokenization class, going to tokenize for nsp")
-            nsp = NSPTransforms(data=self.data)
-            transformations = nsp()
-        elif self.task == "MLM":
-            mlm = MLMTransforms(data=self.data)
-            transformations = mlm()
+        if self.task == "PRETRAIN":
+            pretrain = PretrainTransforms(data=self.data)
+            transformations = pretrain()
+        # if self.task == "NSP":
+        #     # print("transforms.py: Tokenization class, going to tokenize for nsp")
+        #     nsp = NSPTransforms(data=self.data)
+        #     transformations = nsp()
+        # elif self.task == "MLM":
+        #     mlm = MLMTransforms(data=self.data)
+        #     transformations = mlm()
         elif self.task == "QA":
             qa = QATransforms(data=self.data)
             transformations = qa()
