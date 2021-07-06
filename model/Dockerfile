@@ -29,4 +29,4 @@ RUN python -m nltk.downloader -d /usr/local/share/nltk_data punkt
 WORKDIR /src
 # WORKDIR /src/files
 
-CMD ["python3", "main.py"]
+# CMD ["python3", "main.py"]

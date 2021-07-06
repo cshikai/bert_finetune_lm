@@ -3,7 +3,7 @@ version: '3.4'
 services:
   model:
     
-    # command: nvidia-smi
+    command: python main.py
     runtime: nvidia
     build: ./model 
     # image: 

@@ -15,8 +15,6 @@ from .transforms import TimeEncoder #TODO change this to importing our methods i
 from . import transforms
 from typing import Dict
 
-
-
 class CovidDataset(Dataset):
     """
     Covid_Dataset Object
@@ -51,8 +49,9 @@ class CovidDataset(Dataset):
                     self.data_transformed['questions'].pop(i)
                     self.data_transformed['answers'].pop(i)
 
+        # self.tokenizer = BertTokenizerFast.from_pretrained('bert_cached/bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert_cached/bert-base-cased')
         self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert-base-cased')
-        
+
         
         
     def __getitem__(self, idx):
