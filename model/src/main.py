@@ -39,8 +39,8 @@ if __name__ == '__main__':
     # #run pipeline to extract data from raw data
     # annotated_data_pipe()
 
-    PMC_data_pipe = pipeline.PMCDataPipeline(args)
-    PMC_data_pipe()
+    # PMC_data_pipe = pipeline.PMCDataPipeline(args)
+    # PMC_data_pipe()
 
     
 
@@ -49,9 +49,9 @@ if __name__ == '__main__':
     # exp.create_torchscript_model('k=0-epoch=0.ckpt')
     # print("in main.py")
     # exp = experiment.Experiment(args, clearml_task)
-    # exp = experiment.Experiment(args, task)
-    # pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
-    # exp.run_experiment(task='QA', model_startpt=pretrain_best)
+    exp = experiment.Experiment(args, task)
+    pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
+    exp.run_experiment(task='QA', model_startpt=pretrain_best)
 
 
 

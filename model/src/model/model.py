@@ -31,7 +31,7 @@ class BERTModel(pl.LightningModule):
         
         
         self.model_startpoint =model_startpt
-        self.bert_case_uncase = 'bert-base-uncased' if self.use_uncased else 'bert-base-cased'
+        self.bert_case_uncase = 'bert_cached/bert-base-uncased' if self.use_uncased else 'bert_cached/bert-base-cased'
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
         if (self.model_startpoint is None):

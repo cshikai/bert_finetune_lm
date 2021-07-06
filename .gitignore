@@ -35,3 +35,7 @@ model/src/data_to_preprocess_qa.json
 model/src/pipeline/COVID-QA.json
 .gitignore
 model/src/pipeline/data_cleaned.json
+model/src/bert_cached/bert-base-cased/bert-base-cased-config.json
+model/src/bert_cached/bert-base-cased/bert-base-cased-pytorch_model.bin
+model/src/bert_cached/bert-based-uncased/bert-base-uncased-config.json
+model/src/bert_cached/bert-based-uncased/bert-base-uncased-pytorch_model.bin
