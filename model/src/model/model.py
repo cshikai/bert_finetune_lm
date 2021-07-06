@@ -238,10 +238,10 @@ class BERTModel(pl.LightningModule):
         if (self.task == "PRETRAIN"):
             # For NSP
             accuracy = self.calculate_accuracy(output.seq_relationship_logits, next_sentence_label)
-            self.log('train_acc', accuracy, sync_dist=self.distributed)
+            self.log('val_acc', accuracy, sync_dist=self.distributed)
             # For MLM
             perplexity = self.calculate_perplexity(output.prediction_logits, labels)
-            self.log('train_perplex', perplexity, sync_dist=self.distributed)
+            self.log('val_perplexity', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
             self.log('val_exactmatch', em, sync_dist=self.distributed)
@@ -293,10 +293,10 @@ class BERTModel(pl.LightningModule):
         if (self.task == "PRETRAIN"):
             # For NSP
             accuracy = self.calculate_accuracy(output.seq_relationship_logits, next_sentence_label)
-            self.log('train_acc', accuracy, sync_dist=self.distributed)
+            self.log('test_acc', accuracy, sync_dist=self.distributed)
             # For MLM
             perplexity = self.calculate_perplexity(output.prediction_logits, labels)
-            self.log('train_perplex', perplexity, sync_dist=self.distributed)
+            self.log('test_perplex', perplexity, sync_dist=self.distributed)
         elif (self.task == "QA"):
             em = self.calculate_exactmatch(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
             self.log('test_exactmatch', em, sync_dist=self.distributed)
