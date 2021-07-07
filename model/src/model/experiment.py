@@ -14,14 +14,18 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, BatchSampler, RandomSampler
 import pytorch_lightning as pl
+from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint,LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
+from transformers.utils.dummy_pt_objects import MPNET_PRETRAINED_MODEL_ARCHIVE_LIST
 
 from .model import BERTModel
 from .config import cfg
 from .dataset import CovidDataset
 
-
+from datetime import timedelta
+from pathlib import Path
+from typing import Any, Callable, Dict, Optional, Union
 
 
 
@@ -131,7 +135,7 @@ class Experiment(object):
         logger = TensorBoardLogger(self.checkpoint_dir, name='logs')
         return logger
     def _get_callbacks(self, model_name):
-        checkpoint_callback = ModelCheckpoint(
+        checkpoint_callback = CustomCheckpoint(
             dirpath=self.checkpoint_dir,
             filename = model_name + '-{k}-{epoch}',
             save_top_k= self.save_top_k,
@@ -226,3 +230,72 @@ class Experiment(object):
     #     script = model.to_torchscript()
     #     torch.jit.save(script, os.path.join(cfg['train']['checkpoint_dir'],"model.pt"))
     
+class CustomCheckpoint(ModelCheckpoint):
+    CHECKPOINT_JOIN_CHAR = "-"
+    CHECKPOINT_NAME_LAST = "last"
+    FILE_EXTENSION = ".ckpt"
+    STARTING_VERSION = 1
+
+    def __init__(
+        self,
+        dirpath: Optional[Union[str, Path]] = None,
+        filename: Optional[str] = None,
+        monitor: Optional[str] = None,
+        verbose: bool = False,
+        save_last: Optional[bool] = None,
+        save_top_k: Optional[int] = None,
+        save_weights_only: bool = False,
+        mode: str = "min",
+        auto_insert_metric_name: bool = True,
+        every_n_train_steps: Optional[int] = None,
+        every_n_val_epochs: Optional[int] = None,
+        period: Optional[int] = None,
+    ):
+        super().__init__(
+            dirpath,
+            filename,
+            monitor,
+            verbose,
+            save_last,
+            save_top_k,
+            save_weights_only,
+            mode,
+            auto_insert_metric_name,
+            every_n_train_steps,
+            every_n_val_epochs,
+            period,
+        )
+        
+
+        # self.monitor = monitor
+        # self.verbose = verbose
+        # self.save_last = save_last
+        # self.save_top_k = save_top_k
+        # self.save_weights_only = save_weights_only
+        # self.auto_insert_metric_name = auto_insert_metric_name
+        # self._last_global_step_saved = -1
+        # self._last_time_checked: Optional[float] = None
+        # self.current_score = None
+        # self.best_k_models = {}
+        # self.kth_best_model_path = ""
+        # self.best_model_score = None
+        # self.best_model_path = ""
+        # self.last_model_path = ""
+
+        # self.__init_monitor_mode(mode)
+        # self.__init_ckpt_dir(dirpath, filename, save_top_k)
+        # self.__init_triggers(every_n_train_steps, every_n_val_epochs, train_time_interval, period)
+        # self.__validate_init_configuration()
+        # self._save_function = None
+
+    def _save_model(self, trainer: 'pl.Trainer', filepath: str) -> None:
+        if trainer.training_type_plugin.rpc_enabled:
+            # RPCPlugin manages saving all model states
+            # TODO: the rpc plugin should wrap trainer.save_checkpoint
+            # instead of us having to do it here manually
+            trainer.training_type_plugin.rpc_save_model(trainer, self._do_save, filepath)
+        else:
+            self._do_save(trainer, filepath)
+
+        # call s3 function here to upload file to s3 using filepath
+        
