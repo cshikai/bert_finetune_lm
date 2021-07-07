@@ -298,4 +298,13 @@ class CustomCheckpoint(ModelCheckpoint):
             self._do_save(trainer, filepath)
 
         # call s3 function here to upload file to s3 using filepath
-        
+
+       
+        best_model = self.best_model_path
+        print("\nBEST MODEL PATH:", best_model, "\n")
+        # call s3 function here to upload the best_model file to s3 using best_model (which is the path for the best model)
+        # but instead of doing the s3_upload_file(best_model, best_model, sth_here) or sth (i forgot the exact func) to save the best_model to the same path name as the
+        # best_model in the local dir, keep saving the best_model in the same path for e.g. trained_models/best_model (so the best_model will be overwritten
+        # if there's a model that's better than the current one since the file will have the same name)
+        # so its sth like s3_upload_file("path/to/src/trained_models/best_model", best_model, sth_here)
+        # or s3_upload_file(best_model, "path/to/src/trained_models/best_model")
