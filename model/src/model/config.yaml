@@ -85,7 +85,7 @@ train:
     #         epoch_size_up: 5 #epoch , not step
     #         epoch_size_down: 5 #epoch, not step
     checkpoint_dir: '/src/trained_models/'
-    save_top_k : 1 #number of top k models to save while training
+    save_top_k : -1 #number of top k models to save while training
     model_save_period: 1 # models are saved at the end of every <model_save_period> epoch
     log_every_n_steps : 2 #logs are written every <log_every_n_steps> steps
 ---
