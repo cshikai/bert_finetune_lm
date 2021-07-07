@@ -22,14 +22,14 @@ class PMCDataPipeline(object):
         self.qna_clean()
        
     def pretrain_clean(self):
-        nltk.download('all')
+        # nltk.download('all')
         sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
         # Download cleaned data from gdrive
         #raw_url = 'https://drive.google.com/uc?id=1yUVHF8Lzvi9gY3YNMjM-n7hlJR7SaG7A' #old url
-        raw_url = 'https://drive.google.com/uc?id=1nq-5XYJ-qEe_WAZDOJuOzQGNbx9P5Wuu'
-        output = 'data_to_preprocess.json' 
-        gdown.download(raw_url, output, quiet=False)
+        # raw_url = 'https://drive.google.com/uc?id=1nq-5XYJ-qEe_WAZDOJuOzQGNbx9P5Wuu'
+        output = 'pipeline/data_cleaned.json' 
+        # gdown.download(raw_url, output, quiet=False)
         with open(output) as f:
             data = json.load(f)
 
@@ -62,9 +62,9 @@ class PMCDataPipeline(object):
 
     def qna_clean(self):
         # Download data
-        raw_url = 'https://drive.google.com/uc?id=1SJibr9KlCO89IQiZVMaVum9-iTb27r_s'
-        output = 'data_to_preprocess_qa.json'
-        gdown.download(raw_url, output, quiet=False)
+        # raw_url = 'https://drive.google.com/uc?id=1SJibr9KlCO89IQiZVMaVum9-iTb27r_s'
+        output = 'pipeline/COVID-QA.json'
+        # gdown.download(raw_url, output, quiet=False)
         with open(output) as f:
             data = json.load(f)
         
@@ -100,7 +100,7 @@ class PMCDataPipeline(object):
                         if self.use_uncased:
                             context = context.lower()
                             question = question.lower()
-                            answer = answer.lower()
+                            answer['text'] = answer['text'].lower()
                          
                         dict_cqa['context'] = context
                         dict_cqa['question'] = question
@@ -109,23 +109,28 @@ class PMCDataPipeline(object):
 
         # getting start and end indices of the answer in the context
         for ind, pair in enumerate(data):
+            # Get rid of trailing/extra spaces
+            # if answer begins with a whitespace, increase answer_start by 1
+            if (data[ind]['answer']['text'][0] == " "):
+                data[ind]['answer']['answer_start'] += 1
+            data[ind]['answer']['text'] = " ".join(data[ind]['answer']['text'].split())
             answer = data[ind]['answer']
             context = data[ind]['context']
-            gold_text = answer['text']
+            gold_text = " ".join(answer['text'].split())
             start_idx = answer['answer_start']
             end_idx = start_idx + len(gold_text)
 
-            if context[start_idx:end_idx] == gold_text:
-                data[ind]['answer']['answer_end'] = end_idx
+            if (" ".join(context[start_idx:end_idx].split()) == gold_text):
+                data[ind]['answer']['answer_end'] = end_idx - 1
             # in case index is off by 1 or 2
             # When the gold label is off by one character
-            elif context[start_idx-1:end_idx-1] == gold_text:
+            elif (" ".join(context[start_idx-1:end_idx-1].split()) == gold_text):
                 data[ind]['answer']['answer_start'] = start_idx - 1
-                data[ind]['answer']['answer_end'] = end_idx - 1   
+                data[ind]['answer']['answer_end'] = end_idx - 2 
             # When the gold label is off by two characters
-            elif context[start_idx-2:end_idx-2] == gold_text:
+            elif (" ".join(context[start_idx-2:end_idx-2].split()) == gold_text):
                 data[ind]['answer']['answer_start'] = start_idx - 2
-                data[ind]['answer']['answer_end'] = end_idx - 2     
+                data[ind]['answer']['answer_end'] = end_idx - 3     
 
         return data
 
