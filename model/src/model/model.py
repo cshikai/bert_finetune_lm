@@ -45,23 +45,15 @@ class BERTModel(pl.LightningModule):
         else:
             if (self.task == "PRETRAIN"):
                 self.bert = BertForPreTraining.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
-                    # self.model = BertForPreTraining.from_pretrained('bert-base-uncased', state_dict=torch.load(self.model_startpoint, map_location='cpu')) #to load on cpu
             elif (self.task == "QA"):
                 self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
                 self.tokenizer = BertTokenizerFast.from_pretrained(self.bert_case_uncase)
-
-        # self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
-        # self.num_training_steps = self.num_epochs * len(self.train_dataloader)
-        # self.lr_scheduler = get_scheduler('linear', optimizer=self.optimizer, num_warmup_steps=0, num_training_steps=self.num_training_steps)
-        # self.maxAccuracy = -1
 
         self.lr = lr
         self.num_training_steps = num_training_steps
         self.num_warmup_steps = num_warmup_steps
         
         self.distributed = distributed
-        #loss
-        # self.criterion = nn.CrossEntropyLoss()
 
     def configure_optimizers(self):
         optimizer = AdamW(self.parameters(), lr=self.lr)

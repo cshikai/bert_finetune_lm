@@ -38,9 +38,15 @@ Domain can be changed to fine tune the model, as long as the dataset has the sam
     pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
     # exp.run_experiment(task='QA', model_startpt=pretrain_best)
    ```
+  - In model/src/pipeline folder, **pipeline.py**, comment out cleaning of QnA
+   ``` python
+    def __call__(self):
+        self.pretrain_clean()
+        #self.qna_clean()
+   ```
 
-- Fine tune with other models or run with other models:
-  - Refer to [Documentation](#documentation) to edit codes
+- Fine tune with other models:
+  - Refer to [using other BERT models](#using-other-bert-models) to 
 
 
 ### Build the docker container to run the project:
@@ -82,31 +88,90 @@ There should be a cased and uncased version of the dataset.
 - Your Data is not in format
   - Edit **pipeline.py** code and add a method to format your data.
     ```python
-       def __call__(self):
+    def __call__(self):
         self.pretrain_clean()
         self.qna_clean()
         self.your_method()
 
-       def your_method(self):
+    def your_method(self):
        ... code to format data ...
     ```
   - Do NOT comment out pipeline in **main.py**
 
-## Documentation
+## Using other BERT models
+Under **model/src/model/model.py**, in the __ init __ method, add the model by adding another elif statement:
+```python
+if (self.model_startpoint is None):
+   if (self.task == "PRETRAIN"):
+      self.bert = BertForPreTraining.from_pretrained(self.bert_case_uncase)
+   elif (self.task == "QA"):
+      self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase)
+      self.tokenizer = BertTokenizerFast.from_pretrained(self.bert_case_uncase)
+   elif (self.task == "YOUR_BERT_MODEL"):
+      self.bert = BertFor......
+# start training the model from previously trained model which was saved
+else:
+   if (self.task == "PRETRAIN"):
+      self.bert = BertForPreTraining.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+   elif (self.task == "QA"):
+      self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_startpoint))
+      self.tokenizer = BertTokenizerFast.from_pretrained(self.bert_case_uncase)
+   elif (self.task == "YOUR_BERT_MODEL"):
+      self.bert = BertFor......
 
+```
+TODO:
+In the forward method, self.bert
+
+In training_step, validation_step and test_step add elif to get correct tensors for model
+
+Create methods that calculate metrics and call them in the steps
+
+
+## Documentation
+TODO
 ### model/src
 - **main.py**
+  - ClearML task is created here, pipeline and experiment is called here to run. 
 
 
 ### model/src/pipeline
 - **pipeline.py**
+  - Dataset is formatted and cleaned here. It is also split into train/test/valid sets.
+  - __call__() 
+  - pretrain_clean() cleans 
+  - qna_clean()
 - **config.yaml**
+  - use_uncased
 
 ### model/src/model
 - **transforms.py**
+  - Transformations
+  - PretrainTransforms
+  - QATransforms
 - **dataset.py**
+  - init
+  - getitem
+  - len
+  - tokenize_steps
+  - tokenize_pretrain
+  - tokenize_qna
 - **model.py**
+  - configure_optimizers
+  - calculate_accuracy
+  - calculate_perplexity
+  - get_actual_answers
+  - get_pred_answers
+  - get_questions
+  - calculate_f1
+  - calculate_exactmatch
+  - forward
+  - training_step
+  - validation_step
+  - test_step
 - **experiment.py**
+  - run_experiment
+  - CustomCheckpoint
 
 ### model/src/trained_models
 - model files generated after training
