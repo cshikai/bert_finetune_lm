@@ -36,3 +36,4 @@ model/src/pipeline/COVID-QA.json
 .gitignore
 model/src/pipeline/data_cleaned.json
 model/src/bert_cached/
+model/src/qa_model.ckpt
