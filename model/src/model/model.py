@@ -104,6 +104,18 @@ class BERTModel(pl.LightningModule):
             answers.append(self.tokenizer.decode(ids))
         return answers
 
+    # function to get the questions for a batch of input
+    def get_questions(self, input_ids, token_type_ids):
+        questions = []
+        for i, q in enumerate(input_ids):
+            start_q = list(token_type_ids[i]).index(1)
+            if (token_type_ids[i][-1] == 0):
+                pad = list(token_type_ids[i][start_q:]).index(0) + start_q
+                questions.append(self.tokenizer.decode(input_ids[i][start_q:pad-1]))
+            else:
+                questions.append(self.tokenizer.decode(input_ids[i][start_q:-1]))
+        return questions
+
     # F1 Score
     def calculate_f1(self, input_ids, start_positions, end_positions, start_logits, end_logits):
         actual_ans = self.get_actual_answers(input_ids, start_positions, end_positions)
@@ -275,6 +287,7 @@ class BERTModel(pl.LightningModule):
         if (self.task == "QA"):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
+            token_type_ids = batch['token_type_ids']
         elif self.task == "PRETRAIN":
             token_type_ids = batch['token_type_ids']
             labels = batch['labels']
@@ -302,6 +315,16 @@ class BERTModel(pl.LightningModule):
             self.log('test_exactmatch', em, sync_dist=self.distributed)
             f1 = self.calculate_f1(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
             self.log('test_f1', f1, sync_dist=self.distributed)
+            pred_answers = self.get_pred_answers(input_ids, output.start_logits, output.end_logits)
+            actual_answers = self.get_actual_answers(input_ids, start_positions, end_positions)
+            questions = self.get_questions(input_ids, token_type_ids)
+            for i in range(len(questions)):
+                print("\n----------------------------------------------------------------------------------------------")
+                print("\nQuestion:", questions[i])
+                print("\nPredicted Answer:", pred_answers[i])
+                print("\nActual Answer:", actual_answers[i])
+                print("\n----------------------------------------------------------------------------------------------")
+
 
         return {
             'test_loss': loss,
