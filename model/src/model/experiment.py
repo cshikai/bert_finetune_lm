@@ -153,15 +153,12 @@ class Experiment(object):
         pl.seed_everything(self.seed)
 
         train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length)
-        train_batch_sampler = BatchSampler(RandomSampler(train_dataset), batch_size=self.batch_size, drop_last = True)
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
-        valid_batch_sampler = BatchSampler(RandomSampler(valid_dataset), batch_size=self.batch_size, drop_last = True)
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
-        test_batch_sampler = BatchSampler(RandomSampler(test_dataset), batch_size=self.batch_size, drop_last = True)
 
-        train_loader = DataLoader(dataset = train_dataset, batch_sampler = train_batch_sampler, collate_fn=train_dataset.collate_fn, num_workers=self.num_workers)
-        valid_loader = DataLoader(dataset = valid_dataset, batch_sampler = valid_batch_sampler, collate_fn=valid_dataset.collate_fn, num_workers=self.num_workers)
-        test_loader = DataLoader(dataset = test_dataset, batch_sampler = test_batch_sampler, collate_fn=test_dataset.collate_fn, num_workers=self.num_workers)
+        train_loader = DataLoader(dataset = train_dataset, num_workers=self.num_workers, shuffle=True, collate_fn=train_dataset.collate_fn)
+        valid_loader = DataLoader(dataset = valid_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=valid_dataset.collate_fn)
+        test_loader = DataLoader(dataset = test_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=test_dataset.collate_fn)
 
         steps_per_epoch = len(train_dataset) // self.batch_size
         total_training_steps = self.n_epochs*steps_per_epoch
