@@ -1,19 +1,18 @@
 import torch
 from torch._C import device
 import torch.nn as nn
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 import pytorch_lightning as pl
 import pandas as pd
 from torch.utils.data import DataLoader
-from transformers import BertForPreTraining, BertForQuestionAnswering, BertTokenizerFast, AdamW, get_scheduler
+from transformers import BertForQuestionAnswering, BertTokenizerFast, AdamW, get_scheduler
 import torch.nn.functional as F
 
 from model.config import cfg
 
 class BertQAPrediction():
     def __init__(self):
-        self.use_uncased = cfg.model.use_uncased
-        self.seq_length = cfg.model.sequence_length
+        self.use_uncased = cfg['model']['use_uncased']
+        self.seq_length = cfg['model']['sequence_length']
         self.model_path = "qa_model.ckpt" # put the model in the src folder where this qa_main.py file is and rename it to qa_model.ckpt
         self.bert_case_uncase = 'bert_cached/bert-base-uncased' if self.use_uncased else 'bert_cached/bert-base-cased'
         self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_path))
@@ -22,6 +21,7 @@ class BertQAPrediction():
 
 
     def input_question(self):
+        print("\nasking for question\n")
         question = input("Please enter your question: ")
         return question
 
@@ -36,7 +36,8 @@ class BertQAPrediction():
         return question
 
     def tokenize_question(self, question):
-        tokenized_question = self.tokenizer(question, return_tensors='pt', max_length=self.seq_length, truncation=True, padding='max_length')
+        tokenized_question = self.tokenizer(question, return_tensors='pt', max_length=self.seq_length, truncation=True)
+        return tokenized_question
         
     def get_question(self):
         question = self.input_question()
@@ -51,10 +52,10 @@ class BertQAPrediction():
         return answer
 
     def get_prediction(self, tokenized_ques):
-        input_ids = tokenized_ques['input_ids'].to(device)
-        attention_mask = tokenized_ques['attention_mask'].to(device)
-        start_positions = tokenized_ques['start_positions'].to(device)
-        end_positions = tokenized_ques['end_positions'].to(device)
+        input_ids = tokenized_ques['input_ids'].to(self.device)
+        attention_mask = tokenized_ques['attention_mask'].to(self.device)
+        start_positions = tokenized_ques['start_positions'].to(self.device)
+        end_positions = tokenized_ques['end_positions'].to(self.device)
 
         self.bert.eval()
         output = self.bert(input_ids=input_ids, attention_mask=attention_mask, start_positions=start_positions, end_positions=end_positions)
@@ -66,6 +67,5 @@ class BertQAPrediction():
         tokenized_ques = self.get_question()
         pred_answer = self.get_prediction(tokenized_ques)
         print("BERT's predicted answer:", pred_answer)
-        return pred_answer
 
 BertQAPrediction()

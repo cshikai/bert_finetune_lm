@@ -3,7 +3,8 @@ version: '3.4'
 services:
   model:
     
-    command: python main.py
+    # command: python main.py
+    command: python qa_main.py
     runtime: nvidia
     build: ./model 
     # image: 
