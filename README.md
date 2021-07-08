@@ -1,5 +1,9 @@
 # Langauge Model Fine Tuning
-Fine tuning a pretrained BERT model on domain specific data. Built to train on COVID-19 data. Using BertForPreTraining, combines Next Sentence Prediction & Masked Language Modelling to fine tune together. 
+Fine tuning a pretrained BERT model on domain specific data. 
+
+Using BertForPreTraining, it combines Next Sentence Prediction & Masked Language Modelling to fine tune together. Then, using BertForQuestionAnswering, it is fine tuned for the QnA task. 
+
+Domain can be changed to fine tune the model, as long as the dataset has the same format. 
 
 ## Table of Contents
 1) [Requirements](#requirements)
@@ -35,7 +39,7 @@ Fine tuning a pretrained BERT model on domain specific data. Built to train on C
     # exp.run_experiment(task='QA', model_startpt=pretrain_best)
    ```
 
-- Fine tune and run with other tasks:
+- Fine tune with other models or run with other models:
   - Refer to [Documentation](#documentation) to edit codes
 
 
