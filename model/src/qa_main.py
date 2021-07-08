@@ -18,6 +18,7 @@ class BertQAPrediction():
         self.bert_case_uncase = 'bert_cached/bert-base-uncased' if self.use_uncased else 'bert_cached/bert-base-cased'
         self.bert = BertForQuestionAnswering.from_pretrained(self.bert_case_uncase, state_dict=torch.load(self.model_path))
         self.tokenizer = BertTokenizerFast.from_pretrained(self.bert_case_uncase)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
     def input_question(self):
@@ -50,10 +51,10 @@ class BertQAPrediction():
         return answer
 
     def get_prediction(self, tokenized_ques):
-        input_ids = tokenized_ques['input_ids']
-        attention_mask = tokenized_ques['attention_mask']
-        start_positions = tokenized_ques['start_positions']
-        end_positions = tokenized_ques['end_positions']
+        input_ids = tokenized_ques['input_ids'].to(device)
+        attention_mask = tokenized_ques['attention_mask'].to(device)
+        start_positions = tokenized_ques['start_positions'].to(device)
+        end_positions = tokenized_ques['end_positions'].to(device)
 
         self.bert.eval()
         output = self.bert(input_ids=input_ids, attention_mask=attention_mask, start_positions=start_positions, end_positions=end_positions)
@@ -65,3 +66,6 @@ class BertQAPrediction():
         tokenized_ques = self.get_question()
         pred_answer = self.get_prediction(tokenized_ques)
         print("BERT's predicted answer:", pred_answer)
+        return pred_answer
+
+BertQAPrediction()
