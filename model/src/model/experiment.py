@@ -156,9 +156,9 @@ class Experiment(object):
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
 
-        train_loader = DataLoader(dataset = train_dataset, num_workers=self.num_workers, shuffle=True, collate_fn=train_dataset.collate_fn)
-        valid_loader = DataLoader(dataset = valid_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=valid_dataset.collate_fn)
-        test_loader = DataLoader(dataset = test_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=test_dataset.collate_fn)
+        train_loader = DataLoader(dataset = train_dataset, num_workers=self.num_workers, shuffle=True, collate_fn=train_dataset.collate_fn, batch_size=self.batch_size)
+        valid_loader = DataLoader(dataset = valid_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=valid_dataset.collate_fn, batch_size=self.batch_size)
+        test_loader = DataLoader(dataset = test_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=test_dataset.collate_fn, batch_size=self.batch_size)
 
         steps_per_epoch = len(train_dataset) // self.batch_size
         total_training_steps = self.n_epochs*steps_per_epoch
