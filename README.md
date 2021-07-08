@@ -1,11 +1,18 @@
 # Langauge Model Fine Tuning
 Fine tuning a pretrained BERT model on domain specific data. Built to train on COVID-19 data. Using BertForPreTraining, combines Next Sentence Prediction & Masked Language Modelling to fine tune together. 
 
+## Table of Contents
+1) [Requirements](#requirements)
+2) [Usage](#usage)
+3) [Using other datasets](#using-other-datasets)
+4) [Documentation](#documentation)
+
+
 ## Requirements
-1) NVIDIA Driver
-2) CUDA: [Installation](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) 
-3) Docker: [Installation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#install-guide)
-4) ClearML: [Installation](https://allegro.ai/clearml/docs/docs/deploying_clearml/clearml_agent_install_configure.html)
+- NVIDIA Driver
+- CUDA: [Installation](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) 
+- Docker: [Installation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#install-guide)
+- ClearML: [Installation](https://allegro.ai/clearml/docs/docs/deploying_clearml/clearml_agent_install_configure.html)
 
 ## Usage
 
@@ -29,9 +36,9 @@ Fine tuning a pretrained BERT model on domain specific data. Built to train on C
    ```
 
 - Fine tune and run with other tasks:
-  - Refer to Documentation to edit codes
+  - Refer to [Documentation](#documentation) to edit codes
 
----
+
 ### Build the docker container to run the project:
    ```bash
    docker-compose up --build
