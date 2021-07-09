@@ -60,7 +60,7 @@ model:
     # n_mode3_token_layers: 2
 ---
 train:
-    num_epochs: 3
+    num_epochs: 100
 
     n_gpu: 1
     num_workers: 8

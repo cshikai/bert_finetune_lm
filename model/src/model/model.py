@@ -118,11 +118,11 @@ class BERTModel(pl.LightningModule):
             # if either one ans is blank
             if len(actual_ans[i]) == 0 or len(pred_ans[i]) == 0:
                 # if both are blank, it will return 1. Else 0.
-                f1 += int(actual_ans[i] == pred_ans[i])
+                f1 += int(actual_ans[i] == pred_ans[i]) # 1 if true, 0 if false
             else:
                 # turn ans into a set of strings
-                actual_ans_set = set(actual_ans[i].split(" "))
-                pred_ans_set = set(pred_ans[i].split(" "))
+                actual_ans_set = set(actual_ans[i].split())
+                pred_ans_set = set(pred_ans[i].split())
 
                 # get set of common words
                 common_words = actual_ans_set & pred_ans_set
@@ -146,7 +146,7 @@ class BERTModel(pl.LightningModule):
         em = 0
         length = len(actual_ans)
         for i in range(length):
-            em += int(actual_ans[i]==pred_ans[i])
+            em += int(actual_ans[i]==pred_ans[i]) # 1 if true, 0 if false
         em /= length
         return em
 
@@ -155,9 +155,9 @@ class BERTModel(pl.LightningModule):
         Forward propagation of one batch.
         """
         if (self.task == "QA"):
-            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, start_positions=start_positions, end_positions=end_positions)
+            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, start_positions=start_positions, end_positions=end_positions)
         else:
-            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, labels=labels, next_sentence_label=next_sentence_label, token_type_ids=token_type_ids)
+            output = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, labels=labels, next_sentence_label=next_sentence_label)
 
         return output
 
@@ -172,7 +172,7 @@ class BERTModel(pl.LightningModule):
 
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
-        token_type_ids = None
+        token_type_ids = batch['token_type_ids']
         labels = None
         next_sentence_label = None
         start_positions = None
@@ -181,7 +181,6 @@ class BERTModel(pl.LightningModule):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
         elif self.task == "PRETRAIN":
-            token_type_ids = batch['token_type_ids']
             labels = batch['labels']
             next_sentence_label = batch["next_sentence_label"]
         
@@ -216,7 +215,7 @@ class BERTModel(pl.LightningModule):
         # our evaluate function but for one batch and without the code to decide best epoch
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
-        token_type_ids = None
+        token_type_ids = batch['token_type_ids']
         labels = None
         next_sentence_label = None
         start_positions = None
@@ -225,7 +224,6 @@ class BERTModel(pl.LightningModule):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
         elif self.task == "PRETRAIN":
-            token_type_ids = batch['token_type_ids']
             labels = batch['labels']
             next_sentence_label = batch["next_sentence_label"]
         
@@ -257,6 +255,7 @@ class BERTModel(pl.LightningModule):
             'val_acc': accuracy,
             'val_perplex': perplexity,
             'val_em': em,
+            'val_f1': f1,
             # 'labels':y,
             # 'predictions':max_indices,
             # 'confidence':confidence,
@@ -271,7 +270,7 @@ class BERTModel(pl.LightningModule):
         # our evaluate function but for one batch and without the code to decide best epoch
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
-        token_type_ids = None
+        token_type_ids = batch['token_type_ids']
         labels = None
         next_sentence_label = None
         start_positions = None
@@ -279,9 +278,7 @@ class BERTModel(pl.LightningModule):
         if (self.task == "QA"):
             start_positions = batch['start_positions']
             end_positions = batch['end_positions']
-            token_type_ids = batch['token_type_ids']
         elif self.task == "PRETRAIN":
-            token_type_ids = batch['token_type_ids']
             labels = batch['labels']
             next_sentence_label = batch["next_sentence_label"]
         
@@ -323,6 +320,7 @@ class BERTModel(pl.LightningModule):
             'test_acc': accuracy,
             'test_perplex': perplexity,
             'test_em': em,
+            'test_f1': f1,
             # 'labels':y,
             # 'predictions':max_indices,
             # 'confidence':confidence,

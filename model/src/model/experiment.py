@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, BatchSampler, RandomSampler
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
-from pytorch_lightning.callbacks import ModelCheckpoint,LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
 from transformers.utils.dummy_pt_objects import MPNET_PRETRAINED_MODEL_ARCHIVE_LIST
 
@@ -145,7 +145,22 @@ class Experiment(object):
             period = self.model_save_period
             )
         lr_logging_callback = LearningRateMonitor(logging_interval='step')
-        callbacks = [checkpoint_callback,lr_logging_callback]
+        if (model_name.upper() == "QA"):
+            early_stopping_callback = EarlyStopping(
+                monitor='val_f1',
+                min_delta=0,
+                patience=3,
+                verbose=True,
+                mode='max',
+                strict=True,
+                check_finite=True,
+                stopping_threshold=None,
+                divergence_threshold=None,
+                check_on_train_epoch_end=False
+            )
+            callbacks = [checkpoint_callback, lr_logging_callback, early_stopping_callback]
+        else:
+            callbacks = [checkpoint_callback, lr_logging_callback]
         return callbacks
 
     def run_experiment(self, task:str, model_startpt:str=None):
