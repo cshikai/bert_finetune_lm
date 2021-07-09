@@ -99,6 +99,59 @@ There should be a cased and uncased version of the dataset.
   - Do NOT comment out pipeline in **main.py**
 
 ## Using other BERT models
+In **model/src/model/transforms.py**, add a new class to transform the data into the format needed for tokenization for the model. In the Transformations class, add another elif statement to call the class.
+
+```python
+def __call__(self):
+  if self.task == "PRETRAIN":
+    pretrain = PretrainTransforms(data=self.data)
+    transformations = pretrain()
+  elif self.task == "QA":
+     qa = QATransforms(data=self.data)
+     transformations = qa()
+  elif self.task == "YOUR_MODEL":
+    your_model = YourModelTransforms(data=self.data)
+    transformations = your_model()
+              
+  return transformations 
+```
+
+In **model/src/model/dataset.py**, add a new method to tokenize and format the data for model inputs. Example:
+```python
+def tokenize_yourmodel(self, idx):
+  context = self.data_transformed['contexts'][idx]
+  data_tokenized = self.tokenizer(context, return_tensors='pt', truncation=False, padding=False)
+  . . .
+  return data_tokenized
+```
+
+In **__ len __** method, add another elif statement to get the length of the data, depending on your model type. 
+```python
+def __len__(self):
+  if self.task == "PRETRAIN":
+    return len(self.data_transformed['sentence_a'])
+  elif self.task == "QA":
+    return len(self.data_transformed['questions'])
+  elif self.task == "YOURMODEL":
+    return len(self.data_transformed['column_name'])
+   
+```
+
+In **tokenize_steps** method, add another elif statement to call the tokenization method created earlier
+```python
+def tokenize_steps(self, idx):
+  if self.task == "PRETRAIN":
+    data_tokenized = self.tokenize_pretrain(idx)
+  elif self.task == "QA": 
+    data_tokenized = self.tokenize_qna(idx)
+  elif self.task == "YOURMODEL":
+    data_tokenized = self.tokenize_yourmodel(idx)
+
+  return data_tokenized
+
+```
+
+
 Under **model/src/model/model.py**, in the __ init __ method, add the model by adding another elif statement:
 ```python
 if (self.model_startpoint is None):
