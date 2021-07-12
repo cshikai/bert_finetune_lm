@@ -39,7 +39,7 @@ Domain can be changed to fine tune the model, as long as the dataset has the sam
     pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
     # exp.run_experiment(task='QA', model_startpt=pretrain_best)
    ```
-  - In model/src/pipeline folder, **pipeline.py**, comment out cleaning of QnA
+  - In **model/src/pipeline** folder, **pipeline.py**, comment out cleaning of QnA
    ``` python
     def __call__(self):
         self.pretrain_clean()
@@ -47,7 +47,7 @@ Domain can be changed to fine tune the model, as long as the dataset has the sam
    ```
 
 - Fine tune with other models:
-  - Refer to [using other BERT models](#using-other-bert-models) to 
+  - Refer to [using other BERT models](#using-other-bert-models)
 
 
 ### Build the docker container to run the project:
