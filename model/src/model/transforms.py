@@ -11,9 +11,10 @@ from datasets import Dataset
 import json
 
 class PretrainTransforms():
-    def __init__(self, data: list, use_uncased):
+    def __init__(self, data: list, use_uncased, mode: str):
         self.data = data # list of lists of sections where each section is a list of sentences
         self.use_uncased = use_uncased
+        self.mode = mode.lower()
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
         sentence_a = []
@@ -66,16 +67,19 @@ class PretrainTransforms():
         # dictResult['labels'] = labels
 
         # dictResult.map(json.dumps).to_textfiles("pipeline/test.json")
-        path = 'model/data_transformed_uncased.txt' if self.use_uncased else 'model/data_transformed_cased.txt'
+        path = 'model/'+self.mode+'_data_transformed_uncased.txt' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.txt'
 
         with open(path, 'w') as output:
-            for row in listResult:
-                output.write(str(row)+'\n')
+            for i, row in enumerate(listResult):
+                if (i == len(listResult)-1):
+                    output.write(str(row))
+                else:
+                    output.write(str(row)+'\n')
 
         return len(listResult)
 
 class QATransforms():
-    def __init__(self, data: list):
+    def __init__(self, data: list, mode: str):
         self.data = data
     def __call__(self):
         contexts = []
@@ -111,15 +115,13 @@ class Transformations():
         with open(path) as f:
             all_data = json.load(f)
             data_loaded = all_data[self.mode]
-
-
-        
+   
 
         if self.task == "PRETRAIN":
-            pretrain = PretrainTransforms(data=data_loaded, use_uncased=self.use_uncased)
+            pretrain = PretrainTransforms(data=data_loaded, use_uncased=self.use_uncased, mode=self.mode)
             transformations = pretrain()
         elif self.task == "QA":
-            qa = QATransforms(data=data_loaded)
+            qa = QATransforms(data=data_loaded, mode=self.mode)
             transformations = qa()
         else:
             pass # if we decide to fine tune more tasks

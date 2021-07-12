@@ -56,14 +56,14 @@ class CovidDataset(Dataset):
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
         data_transformed = {}
-        path = 'model/data_transformed_uncased.txt' if self.use_uncased else 'model/data_transformed_cased.txt'
+        mode = self.mode.lower()
+        path = 'model/'+mode+'_data_transformed_uncased.txt' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.txt'
 
         with open(path) as fp:
             for i, line in enumerate(fp):
                 if i == idx:
                     data_transformed = ast.literal_eval(line)
                     break
-    
         data_tokenized = self.tokenize_steps(data_transformed)
         return data_tokenized
 
@@ -73,10 +73,6 @@ class CovidDataset(Dataset):
         return self.data_length
         # if self.task == "PRETRAIN":
         #     return len(self.data_transformed['sentence_a'])
-        # # if self.task == "NSP":
-        # #     return len(self.data_transformed['sentence_a'])
-        # # elif self.task == "MLM":
-        # #     return len(self.data_transformed['sentence_list'])
         # elif self.task == "QA":
         #     return len(self.data_transformed['questions'])
     

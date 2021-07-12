@@ -236,6 +236,7 @@ class BERTModel(pl.LightningModule):
         accuracy = 0
         perplexity = 0
         em = 0
+        f1 = 0
         self.log('val_loss', loss, sync_dist=self.distributed)
         if (self.task == "PRETRAIN"):
             # For NSP
@@ -291,6 +292,7 @@ class BERTModel(pl.LightningModule):
         accuracy = 0
         perplexity = 0
         em = 0
+        f1 = 0
         self.log('test_loss', loss, sync_dist=self.distributed)
         if (self.task == "PRETRAIN"):
             # For NSP
