@@ -5,7 +5,6 @@ import copy
 
 import numpy as np
 import torch
-import random
 from torch.utils.data import Dataset
 # from datasets import Dataset
 from transformers import BertTokenizerFast
@@ -152,11 +151,11 @@ class CovidDataset(Dataset):
         # the below are token-wise, so excluding whitespace (note: token-wise != word-wise)
         answer_len = end_token - start_token + 1 # token count
         max_dist = start_token-1 if start_token<=80 else 80
-        dist = random.randint(0, max_dist)
+        dist = torch.randint(0, max_dist)
         answer_start = dist + 1
         answer_end = answer_start + answer_len - 1
         context_start = start_token - dist
-        context_end = end_token + random.randint(0, 80)
+        context_end = end_token + torch.randint(0, 80)
         # if the context start and end token positions exceed the valid range
         if (context_start <= 0):
             context_start = 1

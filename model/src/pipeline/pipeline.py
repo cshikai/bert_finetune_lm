@@ -60,6 +60,7 @@ class PMCDataPipeline(object):
         path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
         with open(path, 'w') as outfile:
             json.dump(split_data, outfile)
+        outfile.close()
 
     def qna_clean(self):
         # Download data
@@ -86,6 +87,7 @@ class PMCDataPipeline(object):
         path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
         with open(path, 'w') as outfile:
             json.dump(data_final, outfile)
+        outfile.close()
 
     def structure_qna(self, data):
         structured_data = []
@@ -191,8 +193,8 @@ class PMCDataPipeline(object):
         return split_data
 
     def qna_split_train_valid_test(self, data):
-        data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=False)
-        data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=False)
+        data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=True, random_state=1)
+        data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=True, random_state=1)
         split_data = {'train': data_train, 'valid': data_valid, 'test': data_test} # ratio is ~70/20/10
         return split_data
 
