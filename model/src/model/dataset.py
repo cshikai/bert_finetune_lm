@@ -10,37 +10,37 @@ from torch.utils.data import Dataset
 # from datasets import Dataset
 from transformers import BertTokenizerFast
 #import dask.dataframe as dd
-
-from .transforms import TimeEncoder #TODO change this to importing our methods in transforms.py
 from . import transforms
 from typing import Dict
+import ast
 
 class CovidDataset(Dataset):
     """
     Covid_Dataset Object
     """
-    def __init__(self, use_uncased:bool, task:str, mode:str, max_length:int):
+    def __init__(self, use_uncased:bool, task:str, mode:str, max_length:int, data_length:int):
         self.use_uncased = use_uncased
         self.task = task
         self.mode = mode
         self.max_length = max_length
         self.task = task 
+        self.data_length = data_length
 
-        if self.task == "QA":
-            # path for QA
-            path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
-        elif self.task == "PRETRAIN":
-            # paths for nsp and mlm
-            path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
+        # if self.task == "QA":
+        #     # path for QA
+        #     path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
+        # elif self.task == "PRETRAIN":
+        #     # paths for nsp and mlm
+        #     path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
 
-        with open(path) as f:
-            all_data = json.load(f)
-            self.data_loaded = all_data[self.mode]
+        # with open(path) as f:
+        #     all_data = json.load(f)
+        #     self.data_loaded = all_data[self.mode]
 
 
-        transformation = transforms.Transformations(data=self.data_loaded, task=self.task)
+        # transformation = transforms.Transformations(data=self.data_loaded, task=self.task)
 
-        self.data_transformed = transformation()
+        # self.data_transformed = transformation()
 
         if (self.task == "QA"):
             for i,ans in enumerate(self.data_transformed['answers']):
@@ -56,40 +56,47 @@ class CovidDataset(Dataset):
         
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
-        data_tokenized = self.tokenize_steps(idx)
+        data_transformed = {}
+        path = 'model/data_transformed_uncased.txt' if self.use_uncased else 'model/data_transformed_cased.txt'
+
+        with open(path) as fp:
+            for i, line in enumerate(fp):
+                if i == idx:
+                    data_transformed = ast.literal_eval(line)
+                    break
+    
+        data_tokenized = self.tokenize_steps(data_transformed)
         return data_tokenized
 
 
     def __len__(self):
-        if self.task == "PRETRAIN":
-            return len(self.data_transformed['sentence_a'])
-        # if self.task == "NSP":
+        
+        return self.data_length
+        # if self.task == "PRETRAIN":
         #     return len(self.data_transformed['sentence_a'])
-        # elif self.task == "MLM":
-        #     return len(self.data_transformed['sentence_list'])
-        elif self.task == "QA":
-            return len(self.data_transformed['questions'])
+        # # if self.task == "NSP":
+        # #     return len(self.data_transformed['sentence_a'])
+        # # elif self.task == "MLM":
+        # #     return len(self.data_transformed['sentence_list'])
+        # elif self.task == "QA":
+        #     return len(self.data_transformed['questions'])
     
     
     # Choose tokenizing steps based on task
-    def tokenize_steps(self, idx):
+    def tokenize_steps(self, data_transformed):
         if self.task == "PRETRAIN":
-            data_tokenized = self.tokenize_pretrain(idx)
-        # if self.task == "NSP":
-        #     data_tokenized = self.tokenize_nsp(idx)
-        # elif self.task == "MLM":
-        #     data_tokenized = self.tokenize_mlm(idx)
+            data_tokenized = self.tokenize_pretrain(data_transformed)
         elif self.task == "QA": 
-            data_tokenized = self.tokenize_qna(idx)
+            data_tokenized = self.tokenize_qna(data_transformed)
 
         return data_tokenized
 
-    def tokenize_pretrain(self, idx):
-        data_tokenized = self.tokenizer(self.data_transformed['sentence_a'][idx], self.data_transformed['sentence_b'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+    def tokenize_pretrain(self, data_transformed):
+        data_tokenized = self.tokenizer(data_transformed['sentence_a'], data_transformed['sentence_b'], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         # mlm label
         data_tokenized['labels'] = data_tokenized.input_ids.detach().clone()
         # nsp label
-        data_tokenized['next_sentence_label'] = torch.LongTensor([self.data_transformed['labels'][idx]]).T
+        data_tokenized['next_sentence_label'] = torch.LongTensor([data_transformed['labels']]).T
         ## mask
         # random arr of floats with equal dimensions to input_ids tensor
         rand = torch.rand(data_tokenized.input_ids.shape)

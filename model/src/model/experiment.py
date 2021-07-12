@@ -22,6 +22,7 @@ from transformers.utils.dummy_pt_objects import MPNET_PRETRAINED_MODEL_ARCHIVE_L
 from .model import BERTModel
 from .config import cfg
 from .dataset import CovidDataset
+from .transforms import Transformations
 
 from datetime import timedelta
 from pathlib import Path
@@ -123,7 +124,7 @@ class Experiment(object):
         # self.n_callsign_token_embedding = args.model_n_callsign_token_embedding 
         # self.n_callsign_token_layers = args.model_n_callsign_token_layers
         
-        self.seed = args.train_seed
+        # self.seed = args.train_seed
         # self.transforms = cfg['data']['transforms']
         # self.lr_schedule = cfg['train']['lr_schedule']
 
@@ -165,11 +166,19 @@ class Experiment(object):
 
     def run_experiment(self, task:str, model_startpt:str=None):
 
-        pl.seed_everything(self.seed)
+        # pl.seed_everything(self.seed)
 
-        train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length)
-        valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length)
-        test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length)
+        # transform data
+        transformation_train = Transformations(task=task, mode="train", use_uncased=self.use_uncased)
+        train_length = transformation_train()
+        transformation_valid = Transformations(task=task, mode="valid", use_uncased=self.use_uncased)
+        valid_length = transformation_valid()
+        transformation_test = Transformations(task=task, mode="test", use_uncased=self.use_uncased)
+        test_length = transformation_test()
+
+        train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length, data_length=train_length)
+        valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length, data_length=valid_length)
+        test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length, data_length=test_length)
 
         train_loader = DataLoader(dataset = train_dataset, num_workers=self.num_workers, shuffle=True, collate_fn=train_dataset.collate_fn, batch_size=self.batch_size)
         valid_loader = DataLoader(dataset = valid_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=valid_dataset.collate_fn, batch_size=self.batch_size)
