@@ -1,4 +1,5 @@
-import os 
+import os
+from nltk.probability import DictionaryConditionalProbDist 
 import pandas as pd
 from sqlalchemy import create_engine
 import json
@@ -71,8 +72,10 @@ class PMCDataPipeline(object):
         data_list = []
         data_final = {}
 
+        structured_data = self.structure_qna(data['data'])
+
         # Split to train test valid
-        data_list = self.split_train_valid_test(data['data'])
+        data_list = self.qna_split_train_valid_test(structured_data)
 
         # Format data & Append to dict
         data_final['train'] = self.format_qna(data_list['train'])
@@ -84,61 +87,110 @@ class PMCDataPipeline(object):
         with open(path, 'w') as outfile:
             json.dump(data_final, outfile)
 
+    def structure_qna(self, data):
+        structured_data = []
+        for group in data:
+            pair_list = group['paragraphs'][0]['qas']
+            context = group['paragraphs'][0]['context']
+            for pair in pair_list:
+                pair['context'] = context
+                structured_data.append(pair)
+        return structured_data
+
     def format_qna(self, data_list):
         data = []
 
-        # Append to data list
-        for group in data_list:  
-            for passage in group['paragraphs']:
-                context = passage['context']
-                for qa in passage['qas']:
-                    question = qa['question']
-                    for answer in qa['answers']:
-                        dict_cqa = {}
+        for pair in data_list:
+            question = pair['question']
+            context = pair['context']
+            for answer in pair['answers']:
+                dict_cqa = {}
 
-                        # If uncased, then lowercase everything. 
-                        if self.use_uncased:
-                            context = context.lower()
-                            question = question.lower()
-                            answer['text'] = answer['text'].lower()
+                # If use uncased, then lowercase everything
+                if self.use_uncased:
+                    context = context.lower()
+                    question = question.lower()
+                    answer['text'] = answer['text'].lower()
+
+                # getting start and end indices of the answer in the context
+                # if answer begins with a whitespace, increase answer_start by 1
+                if (answer['text'][0] == " "):
+                    answer['answer_start'] += 1
+
+                answer['text'] = " ".join(answer['text'].split())
+                
+                gold_text = answer['text']
+                start_idx = answer['answer_start']
+                gold_text_len = len(gold_text)
+                end_idx = start_idx + gold_text_len - 1
+                answer['answer_end'] = end_idx
+
+                # remove extra white spaces in the context as well but only after the start_idx
+                context = context[0:start_idx] + " ".join(context[start_idx:].split())
+
+                dict_cqa['context'] = context
+                dict_cqa['question'] = " ".join(question.split())
+                dict_cqa['answer'] = answer
+                data.append(dict_cqa)
+
+        # # Append to data list
+        # for group in data_list:  
+        #     for passage in group['paragraphs']:
+        #         context = passage['context']
+        #         for qa in passage['qas']:
+        #             question = qa['question']
+        #             for answer in qa['answers']:
+        #                 dict_cqa = {}
+
+        #                 # If uncased, then lowercase everything. 
+        #                 if self.use_uncased:
+        #                     context = context.lower()
+        #                     question = question.lower()
+        #                     answer['text'] = answer['text'].lower()
                          
-                        dict_cqa['context'] = context
-                        dict_cqa['question'] = question
-                        dict_cqa['answer'] = answer
-                        data.append(dict_cqa)
+        #                 dict_cqa['context'] = context
+        #                 dict_cqa['question'] = question
+        #                 dict_cqa['answer'] = answer
+        #                 data.append(dict_cqa)
 
-        # getting start and end indices of the answer in the context
-        for ind, pair in enumerate(data):
-            # Get rid of trailing/extra spaces
-            # if answer begins with a whitespace, increase answer_start by 1
-            if (data[ind]['answer']['text'][0] == " "):
-                data[ind]['answer']['answer_start'] += 1
-            data[ind]['answer']['text'] = " ".join(data[ind]['answer']['text'].split())
-            answer = data[ind]['answer']
-            context = data[ind]['context']
-            gold_text = answer['text']
-            start_idx = answer['answer_start']
-            gold_text_len = len(gold_text)
-            end_idx = start_idx + gold_text_len # without extra white spaces
-            data[ind]['answer']['answer_end'] = end_idx - 1
+        # # getting start and end indices of the answer in the context
+        # for ind, pair in enumerate(data):
+        #     # Get rid of trailing/extra spaces
+        #     # if answer begins with a whitespace, increase answer_start by 1
+        #     if (data[ind]['answer']['text'][0] == " "):
+        #         data[ind]['answer']['answer_start'] += 1
+        #     data[ind]['answer']['text'] = " ".join(data[ind]['answer']['text'].split())
+        #     answer = data[ind]['answer']
+        #     context = data[ind]['context']
+        #     gold_text = answer['text']
+        #     start_idx = answer['answer_start']
+        #     gold_text_len = len(gold_text)
+        #     end_idx = start_idx + gold_text_len # without extra white spaces
+        #     data[ind]['answer']['answer_end'] = end_idx - 1
 
-            # context_processed = " ".join(context[start_idx:].split())
+        #     # context_processed = " ".join(context[start_idx:].split())
 
-            # if (context_processed[0:gold_text_len] == gold_text):
-            #     data[ind]['answer']['answer_end'] = end_idx - 1
-            # in case index is off by 1 or 2
-            # # When the gold label is off by one character
-            # elif (context_processed[1:1+gold_text_len] == gold_text):
-            #     data[ind]['answer']['answer_start'] = start_idx - 1
-            #     data[ind]['answer']['answer_end'] = end_idx - 2 
-            # # When the gold label is off by two characters
-            # elif (context_processed[0:gold_text_len] == gold_text):
-            #     data[ind]['answer']['answer_start'] = start_idx - 2
-            #     data[ind]['answer']['answer_end'] = end_idx - 3     
+        #     # if (context_processed[0:gold_text_len] == gold_text):
+        #     #     data[ind]['answer']['answer_end'] = end_idx - 1
+        #     # in case index is off by 1 or 2
+        #     # # When the gold label is off by one character
+        #     # elif (context_processed[1:1+gold_text_len] == gold_text):
+        #     #     data[ind]['answer']['answer_start'] = start_idx - 1
+        #     #     data[ind]['answer']['answer_end'] = end_idx - 2 
+        #     # # When the gold label is off by two characters
+        #     # elif (context_processed[0:gold_text_len] == gold_text):
+        #     #     data[ind]['answer']['answer_start'] = start_idx - 2
+        #     #     data[ind]['answer']['answer_end'] = end_idx - 3     
 
         return data
 
     def split_train_valid_test(self, data):
+        data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=False)
+        data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=False)
+        split_data = {'train': data_train, 'valid': data_valid, 'test': data_test} # ratio is ~70/20/10
+        return split_data
+
+    def qna_split_train_valid_test(self, data):
         data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=False)
         data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=False)
         split_data = {'train': data_train, 'valid': data_valid, 'test': data_test} # ratio is ~70/20/10
