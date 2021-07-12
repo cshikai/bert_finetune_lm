@@ -9,7 +9,8 @@ Domain can be changed to fine tune the model, as long as the dataset has the sam
 1) [Requirements](#requirements)
 2) [Usage](#usage)
 3) [Using other datasets](#using-other-datasets)
-4) [Documentation](#documentation)
+4) [Using other BERT models](#using-other-bert-models)
+5) [Documentation](#documentation)
 
 
 ## Requirements
@@ -38,7 +39,7 @@ Domain can be changed to fine tune the model, as long as the dataset has the sam
     pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
     # exp.run_experiment(task='QA', model_startpt=pretrain_best)
    ```
-  - In model/src/pipeline folder, **pipeline.py**, comment out cleaning of QnA
+  - In **model/src/pipeline** folder, **pipeline.py**, comment out cleaning of QnA
    ``` python
     def __call__(self):
         self.pretrain_clean()
@@ -46,7 +47,7 @@ Domain can be changed to fine tune the model, as long as the dataset has the sam
    ```
 
 - Fine tune with other models:
-  - Refer to [using other BERT models](#using-other-bert-models) to 
+  - Refer to [using other BERT models](#using-other-bert-models)
 
 
 ### Build the docker container to run the project:
@@ -99,7 +100,7 @@ There should be a cased and uncased version of the dataset.
   - Do NOT comment out pipeline in **main.py**
 
 ## Using other BERT models
-In **model/src/model/transforms.py**, add a new class to transform the data into the format needed for tokenization for the model. In the Transformations class, add another elif statement to call the class.
+- In **model/src/model/transforms.py**, add a new class to transform the data into the format needed for tokenization for the model. In the Transformations class, add another elif statement to call the class.
 
 ```python
 def __call__(self):
@@ -116,7 +117,7 @@ def __call__(self):
   return transformations 
 ```
 
-In **model/src/model/dataset.py**, add a new method to tokenize and format the data for model inputs. Example:
+- In **model/src/model/dataset.py**, add a new method to tokenize and format the data for model inputs. Example:
 ```python
 def tokenize_yourmodel(self, idx):
   context = self.data_transformed['contexts'][idx]
@@ -125,7 +126,7 @@ def tokenize_yourmodel(self, idx):
   return data_tokenized
 ```
 
-In **__ len __** method, add another elif statement to get the length of the data, depending on your model type. 
+- In **\__len__** method, add another elif statement to get the length of the data, depending on your model type. 
 ```python
 def __len__(self):
   if self.task == "PRETRAIN":
@@ -137,7 +138,7 @@ def __len__(self):
    
 ```
 
-In **tokenize_steps** method, add another elif statement to call the tokenization method created earlier
+- In **tokenize_steps** method, add another elif statement to call the tokenization method created earlier
 ```python
 def tokenize_steps(self, idx):
   if self.task == "PRETRAIN":
@@ -152,7 +153,7 @@ def tokenize_steps(self, idx):
 ```
 
 
-Under **model/src/model/model.py**, in the __ init __ method, add the model by adding another elif statement:
+- Under **model/src/model/model.py**, in the **\__init__** method, add the model by adding another elif statement:
 ```python
 if (self.model_startpoint is None):
    if (self.task == "PRETRAIN"):
@@ -173,16 +174,50 @@ else:
       self.bert = BertFor......
 
 ```
-TODO:
-In the forward method, self.bert
 
-In training_step, validation_step and test_step add elif to get correct tensors for model
+- In the **forward** method, when getting the output, ensure that the inputs to self.bert are the correct set. For example, for QA, the required inputs are input_ids, attention_mask, token_type_ids, start_positions, end_positions. For BertForPretraining, it is a different set of inputs. 
 
-Create methods that calculate metrics and call them in the steps
+```python
+def forward(self, input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids):
+  if (self.task == "QA"):
+    output = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, start_positions=start_positions, end_positions=end_positions)
+  else:
+    output = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, labels=labels, next_sentence_label=next_sentence_label)
+
+  return output
+
+```
+
+- In the **training_step**, **validation_step** and **test_step** methods, ensure that the inputs when calling self(the forward method) have the correct values. For example, QA, start_positions end_positions are assigned while for Pretrain, labels and next_sentence_labels are assigned. 
+
+```python
+def training_step(self, batch, batch_idx):
+       
+  input_ids = batch['input_ids']
+  attention_mask = batch['attention_mask']
+  token_type_ids = batch['token_type_ids']
+  labels = None
+  next_sentence_label = None
+  start_positions = None
+  end_positions = None
+  if (self.task == "QA"):
+    start_positions = batch['start_positions']
+    end_positions = batch['end_positions']
+  elif self.task == "PRETRAIN":
+    labels = batch['labels']
+    next_sentence_label = batch["next_sentence_label"]
+        
+
+  # call forward
+  output = self(input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids)
+. . .
+
+```
+
+- Create methods that calculate metrics of the new model and call them in the training, validation and test steps.
 
 
 ## Documentation
-TODO
 ### model/src
 - **main.py**
   - ClearML task is created here, pipeline and experiment is called here to run. 
@@ -190,42 +225,20 @@ TODO
 
 ### model/src/pipeline
 - **pipeline.py**
-  - Dataset is formatted and cleaned here. It is also split into train/test/valid sets.
-  - __call__() 
-  - pretrain_clean() cleans 
-  - qna_clean()
+  - Dataset is formatted and cleaned here. It is also split into train/test/valid sets. Data is then output as a json file in the pipeline folder.
 - **config.yaml**
-  - use_uncased
+  - Using either cased or uncased data is set here. 
 
 ### model/src/model
 - **transforms.py**
-  - Transformations
-  - PretrainTransforms
-  - QATransforms
+  - Data is transformed here before tokenization. Different models/task may require different transformations.
 - **dataset.py**
-  - init
-  - getitem
-  - len
-  - tokenize_steps
-  - tokenize_pretrain
-  - tokenize_qna
+  - Transforms is called here when dataset.py is initialized, then, tokenization is done in getitem.
 - **model.py**
-  - configure_optimizers
-  - calculate_accuracy
-  - calculate_perplexity
-  - get_actual_answers
-  - get_pred_answers
-  - get_questions
-  - calculate_f1
-  - calculate_exactmatch
-  - forward
-  - training_step
-  - validation_step
-  - test_step
+  - This is where the model is defined, along with the forward, training, validation and test steps.
 - **experiment.py**
-  - run_experiment
-  - CustomCheckpoint
+  - This is where the trainer is called to train and test the model.
 
 ### model/src/trained_models
-- model files generated after training
+- Model checkpoint files are generated here after training.
 
