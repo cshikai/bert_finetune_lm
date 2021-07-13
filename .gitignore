@@ -42,3 +42,7 @@ model/src/model/valid_qna_data_transformed_cased.txt
 model/src/model/train_qna_data_transformed_cased.txt
 .gitignore
 model/src/model/test_qna_data_transformed_cased.txt
+model/src/model/test_data_transformed_cased.txt
+.gitignore
+model/src/model/train_data_transformed_cased.txt
+model/src/model/valid_data_transformed_cased.txt
