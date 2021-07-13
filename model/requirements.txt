@@ -13,10 +13,12 @@ chardet==3.0.4
 clearml==1.0.3
 click==8.0.1
 cycler==0.10.0
+dask==2021.3.0
 datasets==1.8.0
 decode==0.5.9
 dill==0.3.4
 dipy==1.4.1
+fastparquet==0.6.3
 filelock==3.0.12
 Flask==2.0.1
 Flask-SQLAlchemy==2.4.1
