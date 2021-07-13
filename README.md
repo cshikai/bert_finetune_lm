@@ -178,7 +178,7 @@ else:
 
 ```
 
-- In the **forward** method, when getting the output, ensure that the inputs to self.bert are the correct set. For example, for QA, the required inputs are input_ids, attention_mask, token_type_ids, start_positions, end_positions. For BertForPretraining, it is a different set of inputs. 
+- In the **forward** method, when getting the output, ensure that the inputs to self.bert are the correct set. For example, for [BertForQuestionAnswering](https://huggingface.co/transformers/model_doc/bert.html#bertforquestionanswering), the required inputs are input_ids, attention_mask, token_type_ids, start_positions, end_positions. For [BertForPretraining](https://huggingface.co/transformers/model_doc/bert.html#bertforpretraining), it is a different set of inputs. 
 
 ```python
 def forward(self, input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids):
