@@ -37,3 +37,8 @@ model/src/pipeline/COVID-QA.json
 model/src/pipeline/data_cleaned.json
 model/src/bert_cached/
 model/src/qa_model.ckpt
+model/src/model/valid_qna_data_transformed_cased.txt
+.gitignore
+model/src/model/train_qna_data_transformed_cased.txt
+.gitignore
+model/src/model/test_qna_data_transformed_cased.txt

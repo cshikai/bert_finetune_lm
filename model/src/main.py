@@ -25,8 +25,8 @@ if __name__ == '__main__':
     model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
     pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
 
-    # PMC_data_pipe = pipeline.PMCDataPipeline(args)
-    # PMC_data_pipe()
+    PMC_data_pipe = pipeline.PMCDataPipeline(args)
+    PMC_data_pipe()
 
     # exp = experiment.Experiment(args,task)
     # exp.run_experiment()
@@ -34,9 +34,9 @@ if __name__ == '__main__':
     # print("in main.py")
     # exp = experiment.Experiment(args, clearml_task)
     exp = experiment.Experiment(args, task)
-    pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
+    # pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
     # exp.run_experiment(task='QA', model_startpt=pretrain_best)
-    # exp.run_experiment(task='QA', model_startpt="trained_models/PRETRAIN-k=0-epoch=0.ckpt")
+    exp.run_experiment(task='QA', model_startpt="trained_models/PRETRAIN-k=0-epoch=0.ckpt")
 
 
 

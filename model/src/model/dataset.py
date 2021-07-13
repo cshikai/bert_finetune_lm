@@ -41,12 +41,12 @@ class CovidDataset(Dataset):
 
         # self.data_transformed = transformation()
 
-        if (self.task == "QA"):
-            for i,ans in enumerate(self.data_transformed['answers']):
-                if (('answer_end' not in ans.keys()) or ('answer_start' not in ans.keys())):
-                    self.data_transformed['contexts'].pop(i)
-                    self.data_transformed['questions'].pop(i)
-                    self.data_transformed['answers'].pop(i)
+        # if (self.task == "QA"):
+        #     for i,ans in enumerate(self.data_transformed['answers']):
+        #         if (('answer_end' not in ans.keys()) or ('answer_start' not in ans.keys())):
+        #             self.data_transformed['contexts'].pop(i)
+        #             self.data_transformed['questions'].pop(i)
+        #             self.data_transformed['answers'].pop(i)
 
         self.tokenizer = BertTokenizerFast.from_pretrained('bert_cached/bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert_cached/bert-base-cased')
         # self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert-base-cased')
@@ -57,7 +57,10 @@ class CovidDataset(Dataset):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
         data_transformed = {}
         mode = self.mode.lower()
-        path = 'model/'+mode+'_data_transformed_uncased.txt' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.txt'
+        if (self.task == "PRETRAIN"):
+            path = 'model/'+mode+'_data_transformed_uncased.txt' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.txt'
+        elif (self.task == "QA"):
+            path = 'model/'+mode+'_qna_data_transformed_uncased.txt' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.txt'
 
         with open(path) as fp:
             for i, line in enumerate(fp):
@@ -141,12 +144,12 @@ class CovidDataset(Dataset):
         
 
      # Tokenize for QNA (for one question-answer pair)
-    def tokenize_qna(self, idx):
+    def tokenize_qna(self, data_transformed):
         # edit the context so the answer will always be in the context
-        context = self.data_transformed['contexts'][idx]
+        context = data_transformed['context']
         context_tokens = self.tokenizer(context, return_tensors='pt', truncation=False, padding=False)
         
-        answer = self.data_transformed['answers'][idx]
+        answer = data_transformed['answer']
         start_token = context_tokens.char_to_token(answer['answer_start'])
         end_token = context_tokens.char_to_token(answer['answer_end'])
         
@@ -154,11 +157,11 @@ class CovidDataset(Dataset):
         # the below are token-wise, so excluding whitespace (note: token-wise != word-wise)
         answer_len = end_token - start_token + 1 # token count
         max_dist = start_token-1 if start_token<=80 else 80
-        dist = torch.randint(0, max_dist)
+        dist = int(torch.randint(0, max_dist, (1,)))
         answer_start = dist + 1
         answer_end = answer_start + answer_len - 1
         context_start = start_token - dist
-        context_end = end_token + torch.randint(0, 80)
+        context_end = end_token + int(torch.randint(0, 80, (1,)))
         # if the context start and end token positions exceed the valid range
         if (context_start <= 0):
             context_start = 1
@@ -168,7 +171,7 @@ class CovidDataset(Dataset):
         new_context = self.tokenizer.decode(context_tokens['input_ids'][0][context_start:context_end+1])
      
         # tokenize using new context
-        data_tokenized = self.tokenizer(new_context, self.data_transformed['questions'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
+        data_tokenized = self.tokenizer(new_context, data_transformed['question'], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         
         # adding start and end position of the answer to data_tokenized
         # start_position = data_tokenized.char_to_token(answer_start)

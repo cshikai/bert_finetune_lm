@@ -11,17 +11,17 @@ from datasets import Dataset
 import json
 
 class PretrainTransforms():
-    def __init__(self, data: list, use_uncased, mode: str):
+    def __init__(self, data: list, use_uncased: bool, mode: str):
         self.data = data # list of lists of sections where each section is a list of sentences
         self.use_uncased = use_uncased
         self.mode = mode.lower()
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
-        sentence_a = []
-        sentence_b = []
-        labels = []
-        dictResult = {}
-        listResult = []
+        # sentence_a = []
+        # sentence_b = []
+        # labels = []
+        # dictResult = {}
+        list_result = []
 
         for ind, article in enumerate(self.data):
             # list of all sentences in the article
@@ -34,17 +34,17 @@ class PretrainTransforms():
                     continue
                 else:
                     for j, sent in enumerate(section): # for each sentence in one section
-                        dictSentence = {}
+                        dict_sentence = {}
                         if (j <= section_size-2):
                             #sentence_a.append(sent)
-                            dictSentence['sentence_a'] = sent
+                            dict_sentence['sentence_a'] = sent
                             if (random.random() >= 0.5):
                                 # sentence_b is the correct next sentence after sentence_a
                                 # sentence_b.append(section[j+1])
                                 # labels.append(0)
 
-                                dictSentence['sentence_b'] = section[j+1]
-                                dictSentence['labels'] = 0
+                                dict_sentence['sentence_b'] = section[j+1]
+                                dict_sentence['labels'] = 0
                             else:
                                 # sentence_b is the wrong next sentence after sentence_a
                                 rand_sent = sent
@@ -54,12 +54,12 @@ class PretrainTransforms():
                                 # sentence_b.append(rand_sent)
                                 # labels.append(1)
 
-                                dictSentence['sentence_b'] = rand_sent
-                                dictSentence['labels'] = 1
+                                dict_sentence['sentence_b'] = rand_sent
+                                dict_sentence['labels'] = 1
                         else: # end of section reached
                             break
 
-                        listResult.append(dictSentence)
+                        list_result.append(dict_sentence)
         
         # return model_inputs 
         # dictResult['sentence_a'] = sentence_a
@@ -70,32 +70,43 @@ class PretrainTransforms():
         path = 'model/'+self.mode+'_data_transformed_uncased.txt' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.txt'
 
         with open(path, 'w') as output:
-            for i, row in enumerate(listResult):
-                if (i == len(listResult)-1):
+            for i, row in enumerate(list_result):
+                if (i == len(list_result)-1):
                     output.write(str(row))
                 else:
                     output.write(str(row)+'\n')
 
-        return len(listResult)
+        return len(list_result)
 
 class QATransforms():
-    def __init__(self, data: list, mode: str):
+    def __init__(self, data: list, use_uncased: bool, mode: str):
         self.data = data
+        self.mode = mode
+        self.use_uncased = use_uncased
     def __call__(self):
-        contexts = []
-        questions = []
-        answers = []
-        dictResult = {}
-        for i, pair in enumerate(self.data):
-            contexts.append(self.data[i]['context'])
-            questions.append(self.data[i]['question'])
-            answers.append(self.data[i]['answer'])
+        # contexts = []
+        # questions = []
+        # answers = []
+        # dictResult = {}
+        list_result = []
+        for i, item in enumerate(self.data):
+            if (('answer_start' and 'answer_end') in item['answer'].keys()):
+                dict_sentence = {}
+                dict_sentence['context'] = self.data[i]['context']
+                dict_sentence['question'] = self.data[i]['question']
+                dict_sentence['answer'] = self.data[i]['answer']
+            
+                list_result.append(dict_sentence)
+           
+        path = 'model/'+self.mode+'_qna_data_transformed_uncased.txt' if self.use_uncased else 'model/'+self.mode+'_qna_data_transformed_cased.txt'
+        with open(path, 'w') as output:
+            for i, row in enumerate(list_result):
+                if (i == len(list_result)-1):
+                    output.write(str(row))
+                else:
+                    output.write(str(row)+'\n')
 
-        dictResult['contexts'] = contexts
-        dictResult['questions'] = questions
-        dictResult['answers'] = answers
-
-        return dictResult
+        return len(list_result)
 
 
 class Transformations():
@@ -121,7 +132,7 @@ class Transformations():
             pretrain = PretrainTransforms(data=data_loaded, use_uncased=self.use_uncased, mode=self.mode)
             transformations = pretrain()
         elif self.task == "QA":
-            qa = QATransforms(data=data_loaded, mode=self.mode)
+            qa = QATransforms(data=data_loaded, use_uncased=self.use_uncased, mode=self.mode)
             transformations = qa()
         else:
             pass # if we decide to fine tune more tasks
