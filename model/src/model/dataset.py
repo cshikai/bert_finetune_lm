@@ -12,6 +12,7 @@ from transformers import BertTokenizerFast
 from . import transforms
 from typing import Dict
 import ast
+import linecache
 
 class CovidDataset(Dataset):
     """
@@ -62,11 +63,12 @@ class CovidDataset(Dataset):
         elif (self.task == "QA"):
             path = 'model/'+mode+'_qna_data_transformed_uncased.txt' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.txt'
 
-        with open(path) as fp:
-            for i, line in enumerate(fp):
-                if i == idx:
-                    data_transformed = ast.literal_eval(line)
-                    break
+        data_transformed = ast.literal_eval(linecache.getline(path, idx+1))
+        # with open(path) as fp:
+        #     for i, line in enumerate(fp):
+        #         if i == idx:
+        #             data_transformed = ast.literal_eval(line)
+        #             break
         data_tokenized = self.tokenize_steps(data_transformed)
         return data_tokenized
 
@@ -196,5 +198,6 @@ class CovidDataset(Dataset):
         for i in range(1, len(batch_list)):
             for k, v in batch_list[i].items():
                 batch[k] = torch.cat((batch[k], v), 0)
+        linecache.clearcache()
         return batch
 
