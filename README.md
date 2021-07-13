@@ -103,6 +103,21 @@ There should be a cased and uncased version of the dataset.
 - In **model/src/model/transforms.py**, add a new class to transform the data into the format needed for tokenization for the model. In the Transformations class, add another elif statement to call the class.
 
 ```python
+class YourModelTransforms():
+  def __init__():
+    . . .
+
+  def __call__():
+    . . .
+    
+    save the transformed data into pipeline folder as a .txt
+    
+    return length of data 
+    
+    . . .
+```
+
+```python
 def __call__(self):
   if self.task == "PRETRAIN":
     pretrain = PretrainTransforms(data=self.data)
@@ -124,18 +139,6 @@ def tokenize_yourmodel(self, idx):
   data_tokenized = self.tokenizer(context, return_tensors='pt', truncation=False, padding=False)
   . . .
   return data_tokenized
-```
-
-- In **\__len__** method, add another elif statement to get the length of the data, depending on your model type. 
-```python
-def __len__(self):
-  if self.task == "PRETRAIN":
-    return len(self.data_transformed['sentence_a'])
-  elif self.task == "QA":
-    return len(self.data_transformed['questions'])
-  elif self.task == "YOURMODEL":
-    return len(self.data_transformed['column_name'])
-   
 ```
 
 - In **tokenize_steps** method, add another elif statement to call the tokenization method created earlier
