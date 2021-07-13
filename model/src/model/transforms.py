@@ -21,7 +21,7 @@ class PretrainTransforms():
         sentence_a = []
         sentence_b = []
         labels = []
-        dictResult = {}
+        # dictResult = {}
         # list_result = []
 
         for ind, article in enumerate(self.data):

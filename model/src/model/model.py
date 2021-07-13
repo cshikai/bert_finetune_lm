@@ -314,6 +314,8 @@ class BERTModel(pl.LightningModule):
                 print("\nQuestion:", questions[i])
                 print("\nPredicted Answer:", pred_answers[i])
                 print("\nActual Answer:", actual_answers[i])
+                if (questions[i]=="How has the mortality rate due to influenza declined in USA over past decades?"):
+                    print("token start and end positions:", start_positions[i], end_positions[i])
                 print("\n----------------------------------------------------------------------------------------------")
 
 
