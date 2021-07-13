@@ -198,7 +198,7 @@ class Experiment(object):
                           seq_length=self.max_length,
                           distributed=distributed,
                           model_startpt = model_startpt)
-        model = model.cuda()
+        # model = model.cuda()
         callbacks = self._get_callbacks(task)
         logger = self._get_logger()
         

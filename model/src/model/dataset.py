@@ -11,8 +11,7 @@ from transformers import BertTokenizerFast
 #import dask.dataframe as dd
 from . import transforms
 from typing import Dict
-import ast
-import linecache
+import dask.dataframe as dd
 
 class CovidDataset(Dataset):
     """
@@ -25,6 +24,16 @@ class CovidDataset(Dataset):
         self.max_length = max_length
         self.task = task 
         self.data_length = data_length
+        mode = self.mode.lower()
+        if (self.task == "PRETRAIN"):
+            self.path = 'model/'+mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.parquet'
+        elif (self.task == "QA"):
+            self.path = 'model/'+mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.parquet'
+
+        self.data = dd.read_parquet(self.path, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
+        self.idx_to_track_id = {}
+        # idx = 0
+        # for k,v in self.
 
         # if self.task == "QA":
         #     # path for QA
@@ -57,13 +66,13 @@ class CovidDataset(Dataset):
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
         data_transformed = {}
-        mode = self.mode.lower()
-        if (self.task == "PRETRAIN"):
-            path = 'model/'+mode+'_data_transformed_uncased.txt' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.txt'
-        elif (self.task == "QA"):
-            path = 'model/'+mode+'_qna_data_transformed_uncased.txt' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.txt'
+        data_transformed = self.data.lock[idx].compute()
+        
 
-        data_transformed = ast.literal_eval(linecache.getline(path, idx+1))
+        # with open(path) as f:
+        #     data_transformed = ast.literal_eval(next(islice(f, idx, idx+1)))
+        # data_transformed = ast.literal_eval(linecache.getline(path, idx+1))
+        # linecache.clearcache()
         # with open(path) as fp:
         #     for i, line in enumerate(fp):
         #         if i == idx:
@@ -198,6 +207,6 @@ class CovidDataset(Dataset):
         for i in range(1, len(batch_list)):
             for k, v in batch_list[i].items():
                 batch[k] = torch.cat((batch[k], v), 0)
-        linecache.clearcache()
+        # linecache.clearcache()
         return batch
 
