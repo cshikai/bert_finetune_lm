@@ -60,27 +60,14 @@ class PretrainTransforms():
                         else: # end of section reached
                             break
 
-                        # list_result.append(dict_sentence)
         
-        # return model_inputs 
-        # dictResult['sentence_a'] = sentence_a
-        # dictResult['sentence_b'] = sentence_b
-        # dictResult['labels'] = labels
 
-        # dictResult.map(json.dumps).to_textfiles("pipeline/test.json")
 
         df = pd.DataFrame({'sentence_a':sentence_a, 'sentence_b':sentence_b, 'labels':labels})
 
         path = 'model/'+self.mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.parquet'
 
         df.to_parquet(path, engine='fastparquet')
-
-        # with open(path, 'w') as output:
-        #     for i, row in enumerate(list_result):
-        #         if (i == len(list_result)-1):
-        #             output.write(str(row))
-        #         else:
-        #             output.write(str(row)+'\n')
 
         return len(labels)
 

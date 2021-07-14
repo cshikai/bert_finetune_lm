@@ -6,9 +6,7 @@ import copy
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-# from datasets import Dataset
 from transformers import BertTokenizerFast
-#import dask.dataframe as dd
 from . import transforms
 from typing import Dict
 import dask.dataframe as dd
@@ -31,36 +29,7 @@ class CovidDataset(Dataset):
             self.path = 'model/'+mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.parquet'
 
         self.data = dd.read_parquet(self.path, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
-        # self.idx_to_track_id = {}
-        # idx = 0
-        # for k,v in self.
-
-        # if self.task == "QA":
-        #     # path for QA
-        #     path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
-        # elif self.task == "PRETRAIN":
-        #     # paths for nsp and mlm
-        #     path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
-
-        # with open(path) as f:
-        #     all_data = json.load(f)
-        #     self.data_loaded = all_data[self.mode]
-
-
-        # transformation = transforms.Transformations(data=self.data_loaded, task=self.task)
-
-        # self.data_transformed = transformation()
-
-        # if (self.task == "QA"):
-        #     for i,ans in enumerate(self.data_transformed['answers']):
-        #         if (('answer_end' not in ans.keys()) or ('answer_start' not in ans.keys())):
-        #             self.data_transformed['contexts'].pop(i)
-        #             self.data_transformed['questions'].pop(i)
-        #             self.data_transformed['answers'].pop(i)
-
         self.tokenizer = BertTokenizerFast.from_pretrained('bert_cached/bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert_cached/bert-base-cased')
-        # self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert-base-cased')
-
         
         
     def __getitem__(self, idx):
@@ -68,28 +37,13 @@ class CovidDataset(Dataset):
         data_transformed = {}
         data_transformed = self.data.loc[idx].compute()
         data_transformed = data_transformed.to_dict('records')
-        # print(data_transformed[0])
-
-        # with open(path) as f:
-        #     data_transformed = ast.literal_eval(next(islice(f, idx, idx+1)))
-        # data_transformed = ast.literal_eval(linecache.getline(path, idx+1))
-        # linecache.clearcache()
-        # with open(path) as fp:
-        #     for i, line in enumerate(fp):
-        #         if i == idx:
-        #             data_transformed = ast.literal_eval(line)
-        #             break
+       
         data_tokenized = self.tokenize_steps(data_transformed[0])
         return data_tokenized
 
 
     def __len__(self):
-        
         return self.data_length
-        # if self.task == "PRETRAIN":
-        #     return len(self.data_transformed['sentence_a'])
-        # elif self.task == "QA":
-        #     return len(self.data_transformed['questions'])
     
     
     # Choose tokenizing steps based on task
@@ -122,38 +76,6 @@ class CovidDataset(Dataset):
             data_tokenized.input_ids[i, selection[i]] = 103
         
         return data_tokenized
-
-    # Tokenize for NSP
-    # def tokenize_nsp(self, idx):
-    #     # tokenize
-    #     data_tokenized = self.tokenizer(self.data_transformed['sentence_a'][idx], self.data_transformed['sentence_b'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-    #     # post tokenize
-    #     data_tokenized['labels'] = torch.LongTensor([self.data_transformed['labels'][idx]]).T
-    #     return data_tokenized
-
-    #  # Tokenize for MLM
-    # def tokenize_mlm(self, idx):
-    #     # tokenize
-    #     data_tokenized = self.tokenizer(self.data_transformed['sentence_list'][idx], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-    #     # post tokenize
-    #     # get labels
-    #     data_tokenized['labels'] = data_tokenized.input_ids.detach().clone()
-    #     ## mask
-    #     # random arr of floats with equal dimensions to input_ids tensor
-    #     rand = torch.rand(data_tokenized.input_ids.shape)
-    #     # mask arr
-    #     # 101 and 102 are the SEP & CLS tokens, don't want to mask them
-    #     mask_arr = (rand * 0.15) * (data_tokenized.input_ids != 101) * (data_tokenized.input_ids != 102) * (data_tokenized.input_ids != 0)
-    #     # assigning masked input ids with 103
-    #     selection = []
-    #     for i in range(data_tokenized.input_ids.shape[0]):
-    #         selection.append(torch.flatten(mask_arr[i].nonzero()).tolist())
-            
-    #     for i in range(data_tokenized.input_ids.shape[0]):
-    #         data_tokenized.input_ids[i, selection[i]] = 103
-        
-    #     return data_tokenized
-        
 
      # Tokenize for QNA (for one question-answer pair)
     def tokenize_qna(self, data_transformed):
