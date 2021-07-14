@@ -110,7 +110,11 @@ class YourModelTransforms():
   def __call__():
     . . .
     
-    save the transformed data into pipeline folder as a .txt
+    # save the transformed data as a dataframe into model folder as a parquet file
+
+    df = pd.DataFrame({'sentence_a':sentence_a, 'sentence_b':sentence_b, 'labels':labels})
+    path = 'model/'+self.mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.parquet'
+    df.to_parquet(path, engine='fastparquet')
     
     return length of data 
     
