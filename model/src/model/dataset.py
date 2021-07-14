@@ -25,10 +25,11 @@ class CovidDataset(Dataset):
         mode = self.mode.lower()
         if (self.task == "PRETRAIN"):
             self.path = 'model/'+mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.parquet'
+            self.data = dd.read_parquet(self.path, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
         elif (self.task == "QA"):
             self.path = 'model/'+mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.parquet'
-
-        self.data = dd.read_parquet(self.path, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
+            self.data = dd.read_parquet(self.path, columns=['context', 'question', 'answer'], engine='fastparquet')
+        
         self.tokenizer = BertTokenizerFast.from_pretrained('bert_cached/bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert_cached/bert-base-cased')
         
         

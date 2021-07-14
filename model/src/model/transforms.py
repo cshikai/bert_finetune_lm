@@ -77,29 +77,24 @@ class QATransforms():
         self.mode = mode
         self.use_uncased = use_uncased
     def __call__(self):
-        # contexts = []
-        # questions = []
-        # answers = []
-        # dictResult = {}
-        list_result = []
+        contexts = []
+        questions = []
+        answers = []
+        
         for i, item in enumerate(self.data):
             if (('answer_start' and 'answer_end') in item['answer'].keys()):
-                dict_sentence = {}
-                dict_sentence['context'] = self.data[i]['context']
-                dict_sentence['question'] = self.data[i]['question']
-                dict_sentence['answer'] = self.data[i]['answer']
-            
-                list_result.append(dict_sentence)
-           
-        path = 'model/'+self.mode+'_qna_data_transformed_uncased.txt' if self.use_uncased else 'model/'+self.mode+'_qna_data_transformed_cased.txt'
-        with open(path, 'w') as output:
-            for i, row in enumerate(list_result):
-                if (i == len(list_result)-1):
-                    output.write(str(row))
-                else:
-                    output.write(str(row)+'\n')
 
-        return len(list_result)
+                contexts.append(self.data[i]['context'])
+                questions.append(self.data[i]['question'])
+                answers.append(self.data[i]['answer'])
+
+        df = pd.DataFrame({'context':contexts, 'question':questions, 'answer':answers})
+           
+        path = 'model/'+self.mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_qna_data_transformed_cased.parquet'
+        
+        df.to_parquet(path, engine='fastparquet')
+
+        return len(questions)
 
 
 class Transformations():
