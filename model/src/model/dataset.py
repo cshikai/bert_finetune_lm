@@ -31,7 +31,7 @@ class CovidDataset(Dataset):
             self.path = 'model/'+mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.parquet'
 
         self.data = dd.read_parquet(self.path, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
-        self.idx_to_track_id = {}
+        # self.idx_to_track_id = {}
         # idx = 0
         # for k,v in self.
 
@@ -66,8 +66,9 @@ class CovidDataset(Dataset):
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
         data_transformed = {}
-        data_transformed = self.data.lock[idx].compute()
-        
+        data_transformed = self.data.loc[idx].compute()
+        data_transformed = data_transformed.to_dict('records')
+        # print(data_transformed[0])
 
         # with open(path) as f:
         #     data_transformed = ast.literal_eval(next(islice(f, idx, idx+1)))
@@ -78,7 +79,7 @@ class CovidDataset(Dataset):
         #         if i == idx:
         #             data_transformed = ast.literal_eval(line)
         #             break
-        data_tokenized = self.tokenize_steps(data_transformed)
+        data_tokenized = self.tokenize_steps(data_transformed[0])
         return data_tokenized
 
 
