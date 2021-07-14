@@ -84,32 +84,12 @@ from typing import Any, Callable, Dict, Optional, Union
 
 class Experiment(object):
    #should init as arguments here 
-    def __init__(self, args, clearml_task):
-        
-        self.clearml_task = clearml_task
+    def __init__(self, args):
         self.datapath = args.data_path
-        # self.features = args.data_features
-        # self.callsign_column = args.data_identifiers_callsign_data_column
-        # self.mode3_column = args.data_identifiers_mode3_data_column
-        # self.time_encoding_dims = args.data_time_encoding_dims
-        # self.n_features = (len(args.data_features) + self.time_encoding_dims -1) if self.time_encoding_dims else len(args.data_features)
-        # self.label = args.data_label
-       
-        # self.weight_by = args.data_weight_by
-
-        
-        # self.hid_dim = args.model_hidden_size
-        # self.n_layers = args.model_hidden_layers
-        # self.enc_dropout = args.model_enc_dropout
-        # self.dec_dropout = args.model_dec_dropout
-        # self.teacher_forcing = args.model_teacher_forcing
-
-
         self.checkpoint_dir = args.train_checkpoint_dir
         self.batch_size = args.train_batch_size
         self.learning_rate = args.train_lr
 
-        
         self.auto_lr = args.train_auto_lr
         self.n_gpu = args.train_n_gpu
         self.accelerator = args.train_accelerator
@@ -117,16 +97,6 @@ class Experiment(object):
         self.log_every_n_steps = args.train_log_every_n_steps
         self.save_top_k = args.train_save_top_k
         self.num_workers = args.train_num_workers
-
-        # self.n_mode3_token_embedding = args.model_n_mode3_token_embedding 
-        # self.n_mode3_token_layers = args.model_n_mode3_token_layers
-
-        # self.n_callsign_token_embedding = args.model_n_callsign_token_embedding 
-        # self.n_callsign_token_layers = args.model_n_callsign_token_layers
-        
-        # self.seed = args.train_seed
-        # self.transforms = cfg['data']['transforms']
-        # self.lr_schedule = cfg['train']['lr_schedule']
 
         self.use_uncased = args.model_use_uncased
         self.max_length = args.model_sequence_length
@@ -244,12 +214,6 @@ class Experiment(object):
                 parser.add_argument('--'+key,default=value)
 
         return parser
-
-    # @staticmethod
-    # def create_torchscript_model(model_name):
-    #     model = Seq2Seq.load_from_checkpoint(os.path.join(cfg['train']['checkpoint_dir'],model_name))
-    #     script = model.to_torchscript()
-    #     torch.jit.save(script, os.path.join(cfg['train']['checkpoint_dir'],"model.pt"))
     
 class CustomCheckpoint(ModelCheckpoint):
     CHECKPOINT_JOIN_CHAR = "-"
