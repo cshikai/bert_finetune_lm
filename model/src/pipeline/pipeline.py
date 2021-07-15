@@ -193,8 +193,8 @@ class PMCDataPipeline(object):
         return split_data
 
     def qna_split_train_valid_test(self, data):
-        data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=True, random_state=1)
-        data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=True, random_state=1)
+        data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=True)
+        data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=True)
         split_data = {'train': data_train, 'valid': data_valid, 'test': data_test} # ratio is ~70/20/10
         return split_data
 
