@@ -22,10 +22,9 @@ if __name__ == '__main__':
     # task = Task.init(project_name="BERT", task_name="Fine tuning for domain specificity - with sampler")
     # task = Task.init(project_name="BERT", task_name="test Fine tuning for QA - using pretraining ckpt (cased) early stopping, patience=3")
     
-    # task = Task.init(project_name="BERT", task_name="testing pretrain")
-    # model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
-    # pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
-    task=None
+    task = Task.init(project_name="BERT", task_name="testing pretrain")
+    model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
+    pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
         
     # PMC_data_pipe = pipeline.PMCDataPipeline(args)
     # PMC_data_pipe()

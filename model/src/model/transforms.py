@@ -17,6 +17,12 @@ class PretrainTransforms():
         self.data = data # list of lists of sections where each section is a list of sentences
         self.use_uncased = use_uncased
         self.mode = mode.lower()
+        if (self.mode == "train"):
+            self.nparts = 20
+        elif (self.mode == "valid"):
+            self.nparts = 6
+        elif (self.mode == "test"):
+            self.nparts = 3
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
         sentence_a = []
@@ -74,7 +80,7 @@ class PretrainTransforms():
 
         df.to_parquet(path1, engine='fastparquet')
         ddf = dd.read_parquet(path1, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
-        ddf = ddf.repartition(npartitions=20).to_parquet(path2)
+        ddf = ddf.repartition(npartitions=self.nparts).to_parquet(path2)
 
         os.remove(path1)
 
