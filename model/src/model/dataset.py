@@ -34,7 +34,7 @@ class CovidDataset(Dataset):
             start = time.time()
             data_transformed = self.data.loc[84].compute()
             end = time.time()
-            print('idx:', 1, 'time taken to retrieve one row before partition:', end-start)
+            print('idx:', 1, 'time taken to retrieve one row after partition:', end-start)
             # self.data = self.data.repartition(npartitions=2).to_parquet('model/test{}.parquet'.format(mode))
             # self.data = dd.read_parquet('model/test{}.parquet'.format(mode),columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
             # print("df new npartitions:", self.data.npartitions)
