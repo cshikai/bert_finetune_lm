@@ -124,7 +124,7 @@ class Experiment(object):
         # self.n_callsign_token_embedding = args.model_n_callsign_token_embedding 
         # self.n_callsign_token_layers = args.model_n_callsign_token_layers
         
-        # self.seed = args.train_seed
+        self.seed = args.train_seed
         # self.transforms = cfg['data']['transforms']
         # self.lr_schedule = cfg['train']['lr_schedule']
 
@@ -166,7 +166,7 @@ class Experiment(object):
 
     def run_experiment(self, task:str, model_startpt:str=None):
 
-        # pl.seed_everything(self.seed)
+        pl.seed_everything(self.seed)
 
         # transform data
         transformation_train = Transformations(task=task, mode="train", use_uncased=self.use_uncased)

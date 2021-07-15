@@ -2,6 +2,8 @@ from typing import List, Callable
 import os
 import json
 import copy
+import sys
+import time
 
 import numpy as np
 import torch
@@ -26,6 +28,23 @@ class CovidDataset(Dataset):
         if (self.task == "PRETRAIN"):
             self.path = 'model/'+mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.parquet'
             self.data = dd.read_parquet(self.path, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
+            # self.data = self.data.repartition(npartitions=20)
+            print('is known division',self.data.known_divisions)
+            # print("df original npartitions:", self.data.npartitions)
+            start = time.time()
+            data_transformed = self.data.loc[84].compute()
+            end = time.time()
+            print('idx:', 1, 'time taken to retrieve one row before partition:', end-start)
+            # self.data = self.data.repartition(npartitions=2).to_parquet('model/test{}.parquet'.format(mode))
+            # self.data = dd.read_parquet('model/test{}.parquet'.format(mode),columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
+            # print("df new npartitions:", self.data.npartitions)
+
+            # start = time.time()
+            # data_transformed = self.data.loc[1].compute()
+            # end = time.time()
+            # print('idx:', 1, 'time taken to retrieve one row after partition:', end-start)
+            # # self.data = self.data.repartition(partition_size="100MB")
+            # print("self.data size:", sys.getsizeof(self.data))
         elif (self.task == "QA"):
             self.path = 'model/'+mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.parquet'
             self.data = dd.read_parquet(self.path, columns=['context', 'question', 'answer'], engine='fastparquet')
@@ -35,8 +54,15 @@ class CovidDataset(Dataset):
         
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
+        print('get item')
+        print(idx)
         data_transformed = {}
+        start = time.time()
+        print('start')
         data_transformed = self.data.loc[idx].compute()
+        print('end')
+        end = time.time()
+        print('idx:', idx, 'time taken to retrieve one row:', end-start)
         data_transformed = data_transformed.to_dict('records')
        
         data_tokenized = self.tokenize_steps(data_transformed[0])
@@ -44,7 +70,7 @@ class CovidDataset(Dataset):
 
 
     def __len__(self):
-        return self.data_length
+        return len(self.data)
     
     
     # Choose tokenizing steps based on task

@@ -10,6 +10,7 @@ import random
 from datasets import Dataset
 import json
 import pandas as pd
+import dask.dataframe as dd
 
 class PretrainTransforms():
     def __init__(self, data: list, use_uncased: bool, mode: str):
@@ -64,10 +65,25 @@ class PretrainTransforms():
 
 
         df = pd.DataFrame({'sentence_a':sentence_a, 'sentence_b':sentence_b, 'labels':labels})
+        df['idx'] = range(len(df))
+        df = df.set_index('idx')
+        # df.drop(columns=['idx'])
 
-        path = 'model/'+self.mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.parquet'
+        path1 = 'model/'+self.mode+'_temp_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_temp_cased.parquet'
+        path2 = 'model/'+self.mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.parquet'
 
-        df.to_parquet(path, engine='fastparquet')
+        df.to_parquet(path1, engine='fastparquet')
+        ddf = dd.read_parquet(path1, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
+        ddf = ddf.repartition(npartitions=20).to_parquet(path2)
+
+        os.remove(path1)
+
+        # print("{} df size: {}", format(self.mode, str(len(labels))))
+
+        #load with dask
+        # repartition
+        # save
+        # delete original parquet
 
         return len(labels)
 
