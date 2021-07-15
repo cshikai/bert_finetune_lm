@@ -12,12 +12,14 @@ from transformers import BertTokenizerFast
 from . import transforms
 from typing import Dict
 import dask.dataframe as dd
+import dask
 
 class CovidDataset(Dataset):
     """
     Covid_Dataset Object
     """
     def __init__(self, use_uncased:bool, task:str, mode:str, max_length:int, data_length:int):
+        dask.config.set(scheduler='synchronous')
         self.use_uncased = use_uncased
         self.task = task
         self.mode = mode
@@ -31,10 +33,6 @@ class CovidDataset(Dataset):
             # self.data = self.data.repartition(npartitions=20)
             print('is known division',self.data.known_divisions)
             # print("df original npartitions:", self.data.npartitions)
-            start = time.time()
-            data_transformed = self.data.loc[84].compute()
-            end = time.time()
-            print('idx:', 1, 'time taken to retrieve one row before partition:', end-start)
             # self.data = self.data.repartition(npartitions=2).to_parquet('model/test{}.parquet'.format(mode))
             # self.data = dd.read_parquet('model/test{}.parquet'.format(mode),columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
             # print("df new npartitions:", self.data.npartitions)
@@ -54,15 +52,11 @@ class CovidDataset(Dataset):
         
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
-        print('get item')
-        print(idx)
         data_transformed = {}
-        start = time.time()
-        print('start')
+        # start = time.time()
         data_transformed = self.data.loc[idx].compute()
-        print('end')
-        end = time.time()
-        print('idx:', idx, 'time taken to retrieve one row:', end-start)
+        # end = time.time()
+        # print('idx:', idx, 'time taken to retrieve one row:', end-start)
         data_transformed = data_transformed.to_dict('records')
        
         data_tokenized = self.tokenize_steps(data_transformed[0])
