@@ -18,11 +18,11 @@ class PretrainTransforms():
         self.use_uncased = use_uncased
         self.mode = mode.lower()
         if (self.mode == "train"):
-            self.nparts = 40
+            self.nparts = 60
         elif (self.mode == "valid"):
-            self.nparts = 12
+            self.nparts = 18
         elif (self.mode == "test"):
-            self.nparts = 6
+            self.nparts = 9
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
         sentence_a = []
