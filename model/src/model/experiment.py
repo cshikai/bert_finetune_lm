@@ -84,9 +84,7 @@ from typing import Any, Callable, Dict, Optional, Union
 
 class Experiment(object):
    #should init as arguments here 
-    def __init__(self, args, clearml_task):
-        
-        self.clearml_task = clearml_task
+    def __init__(self, args):
         self.datapath = args.data_path
         # self.features = args.data_features
         # self.callsign_column = args.data_identifiers_callsign_data_column
@@ -138,7 +136,7 @@ class Experiment(object):
     def _get_callbacks(self, model_name):
         checkpoint_callback = CustomCheckpoint(
             dirpath=self.checkpoint_dir,
-            filename = model_name + '-{epoch}',
+            filename = 'SAMPLE-150-' + model_name + '-{epoch}',
             save_top_k= self.save_top_k,
             verbose=True,
             monitor='val_loss',

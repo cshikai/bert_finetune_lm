@@ -38,6 +38,7 @@ if __name__ == '__main__':
     # exp = experiment.Experiment(args)
     # # exp = experiment.Experiment(args, task)
     pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
+    print(pretrain_best)
     # # exp.run_experiment(task='QA', model_startpt=None)
     # exp.run_experiment(task='QA', model_startpt="trained_models/PRETRAIN-epoch=0.ckpt")
 
