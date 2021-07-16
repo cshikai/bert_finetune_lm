@@ -112,9 +112,20 @@ class YourModelTransforms():
     
     # save the transformed data as a dataframe into model folder as a parquet file
 
+    
     df = pd.DataFrame({'sentence_a':sentence_a, 'sentence_b':sentence_b, 'labels':labels})
-    path = 'model/'+self.mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.parquet'
-    df.to_parquet(path, engine='fastparquet')
+    df['idx'] = range(len(df))
+    df = df.set_index('idx')
+
+    path1 = 'model/'+self.mode+'_temp_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_temp_cased.parquet'
+    path2 = 'model/'+self.mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.parquet'
+
+    df.to_parquet(path1, engine='fastparquet')
+    ddf = dd.read_parquet(path1, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
+    ddf = ddf.repartition(npartitions=self.nparts).to_parquet(path2)
+
+    # remove old file
+    os.remove(path1)
     
     return length of data 
     
