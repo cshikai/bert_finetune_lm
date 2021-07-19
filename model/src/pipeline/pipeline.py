@@ -135,55 +135,6 @@ class PMCDataPipeline(object):
                 dict_cqa['answer'] = answer
                 data.append(dict_cqa)
 
-        # # Append to data list
-        # for group in data_list:  
-        #     for passage in group['paragraphs']:
-        #         context = passage['context']
-        #         for qa in passage['qas']:
-        #             question = qa['question']
-        #             for answer in qa['answers']:
-        #                 dict_cqa = {}
-
-        #                 # If uncased, then lowercase everything. 
-        #                 if self.use_uncased:
-        #                     context = context.lower()
-        #                     question = question.lower()
-        #                     answer['text'] = answer['text'].lower()
-                         
-        #                 dict_cqa['context'] = context
-        #                 dict_cqa['question'] = question
-        #                 dict_cqa['answer'] = answer
-        #                 data.append(dict_cqa)
-
-        # # getting start and end indices of the answer in the context
-        # for ind, pair in enumerate(data):
-        #     # Get rid of trailing/extra spaces
-        #     # if answer begins with a whitespace, increase answer_start by 1
-        #     if (data[ind]['answer']['text'][0] == " "):
-        #         data[ind]['answer']['answer_start'] += 1
-        #     data[ind]['answer']['text'] = " ".join(data[ind]['answer']['text'].split())
-        #     answer = data[ind]['answer']
-        #     context = data[ind]['context']
-        #     gold_text = answer['text']
-        #     start_idx = answer['answer_start']
-        #     gold_text_len = len(gold_text)
-        #     end_idx = start_idx + gold_text_len # without extra white spaces
-        #     data[ind]['answer']['answer_end'] = end_idx - 1
-
-        #     # context_processed = " ".join(context[start_idx:].split())
-
-        #     # if (context_processed[0:gold_text_len] == gold_text):
-        #     #     data[ind]['answer']['answer_end'] = end_idx - 1
-        #     # in case index is off by 1 or 2
-        #     # # When the gold label is off by one character
-        #     # elif (context_processed[1:1+gold_text_len] == gold_text):
-        #     #     data[ind]['answer']['answer_start'] = start_idx - 1
-        #     #     data[ind]['answer']['answer_end'] = end_idx - 2 
-        #     # # When the gold label is off by two characters
-        #     # elif (context_processed[0:gold_text_len] == gold_text):
-        #     #     data[ind]['answer']['answer_start'] = start_idx - 2
-        #     #     data[ind]['answer']['answer_end'] = end_idx - 3     
-
         return data
 
     def split_train_valid_test(self, data):

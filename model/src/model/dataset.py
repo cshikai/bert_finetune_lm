@@ -30,8 +30,6 @@ class CovidDataset(Dataset):
         if (self.task == "PRETRAIN"):
             self.path = 'model/'+mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.parquet'
             self.data = dd.read_parquet(self.path, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
-            # self.data = self.data.repartition(npartitions=20)
-            print('is known division',self.data.known_divisions)
             # print("df original npartitions:", self.data.npartitions)
             # self.data = self.data.repartition(npartitions=2).to_parquet('model/test{}.parquet'.format(mode))
             # self.data = dd.read_parquet('model/test{}.parquet'.format(mode),columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
@@ -53,10 +51,7 @@ class CovidDataset(Dataset):
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
         data_transformed = {}
-        # start = time.time()
         data_transformed = self.data.loc[idx].compute()
-        # end = time.time()
-        # print('idx:', idx, 'time taken to retrieve one row:', end-start)
         data_transformed = data_transformed.to_dict('records')
        
         data_tokenized = self.tokenize_steps(data_transformed[0])
@@ -127,16 +122,6 @@ class CovidDataset(Dataset):
      
         # tokenize using new context
         data_tokenized = self.tokenizer(new_context, data_transformed['question'], return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
-        
-        # adding start and end position of the answer to data_tokenized
-        # start_position = data_tokenized.char_to_token(answer_start)
-        # end_position = data_tokenized.char_to_token(answer_end)
-
-        # if start/end position is None, the answer passage has been truncated
-        # if (start_position is None):
-        #     start_position = self.max_length
-        # if (end_position is None):
-        #     end_position = self.max_length
 
         data_tokenized.update({'start_positions': torch.LongTensor([answer_start]), 'end_positions': torch.LongTensor([answer_end])})
         

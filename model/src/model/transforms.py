@@ -17,19 +17,19 @@ class PretrainTransforms():
         self.data = data # list of lists of sections where each section is a list of sentences
         self.use_uncased = use_uncased
         self.mode = mode.lower()
+
+        # set number of partitions based on data size
         if (self.mode == "train"):
-            self.nparts = 60
+            self.nparts = 10
         elif (self.mode == "valid"):
-            self.nparts = 18
+            self.nparts = 2
         elif (self.mode == "test"):
-            self.nparts = 9
+            self.nparts = 1
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
         sentence_a = []
         sentence_b = []
         labels = []
-        # dictResult = {}
-        # list_result = []
 
         for ind, article in enumerate(self.data):
             # list of all sentences in the article
@@ -42,17 +42,12 @@ class PretrainTransforms():
                     continue
                 else:
                     for j, sent in enumerate(section): # for each sentence in one section
-                        # dict_sentence = {}
                         if (j <= section_size-2):
                             sentence_a.append(sent)
-                            # dict_sentence['sentence_a'] = sent
                             if (random.random() >= 0.5):
                                 # sentence_b is the correct next sentence after sentence_a
                                 sentence_b.append(section[j+1])
                                 labels.append(0)
-
-                                # dict_sentence['sentence_b'] = section[j+1]
-                                # dict_sentence['labels'] = 0
                             else:
                                 # sentence_b is the wrong next sentence after sentence_a
                                 rand_sent = sent
@@ -61,35 +56,26 @@ class PretrainTransforms():
                                     rand_sent = bag[randi]
                                 sentence_b.append(rand_sent)
                                 labels.append(1)
-
-                                # dict_sentence['sentence_b'] = rand_sent
-                                # dict_sentence['labels'] = 1
                         else: # end of section reached
                             break
-
-        
-
 
         df = pd.DataFrame({'sentence_a':sentence_a, 'sentence_b':sentence_b, 'labels':labels})
         df['idx'] = range(len(df))
         df = df.set_index('idx')
-        # df.drop(columns=['idx'])
 
         path1 = 'model/'+self.mode+'_temp_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_temp_cased.parquet'
         path2 = 'model/'+self.mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.parquet'
 
+        # save original parquet
         df.to_parquet(path1, engine='fastparquet')
+        # load original parquet
         ddf = dd.read_parquet(path1, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
+
+        # repartition parquet and save
         ddf = ddf.repartition(npartitions=self.nparts).to_parquet(path2)
 
-        os.remove(path1)
-
-        # print("{} df size: {}", format(self.mode, str(len(labels))))
-
-        #load with dask
-        # repartition
-        # save
         # delete original parquet
+        os.remove(path1)
 
         return len(labels)
 
@@ -131,7 +117,7 @@ class Transformations():
             path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
         elif self.task == "PRETRAIN":
             # paths for nsp and mlm
-            path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
+            path = 'pipeline/uncased_150.json' if self.use_uncased else 'pipeline/cased_150.json'
 
         with open(path) as f:
             all_data = json.load(f)

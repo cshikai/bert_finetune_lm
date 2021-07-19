@@ -15,7 +15,6 @@ from torchmetrics import Accuracy, F1
 import torch.nn.functional as F
 
 from .config import cfg
-# from . import results
 
 
 class BERTModel(pl.LightningModule):
@@ -23,16 +22,9 @@ class BERTModel(pl.LightningModule):
         super().__init__()
         self.use_uncased = use_uncased
         self.task = task.upper()
-        # self.batch_size = batch_size
         self.seq_length = seq_length
-        # self.train_dataloader = train_dataloader
-        # self.eval_dataloader = eval_dataloader
-        # self.num_epochs = num_epochs
-        
-        
         self.model_startpoint = model_startpt
         self.bert_case_uncase = 'bert_cached/bert-base-uncased' if self.use_uncased else 'bert_cached/bert-base-cased'
-        # self.bert_case_uncase = 'bert-base-uncased' if self.use_uncased else 'bert-base-cased'
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
         if (self.model_startpoint is None):
@@ -257,11 +249,6 @@ class BERTModel(pl.LightningModule):
             'val_perplex': perplexity,
             'val_em': em,
             'val_f1': f1,
-            # 'labels':y,
-            # 'predictions':max_indices,
-            # 'confidence':confidence,
-            # 'seg_labels': seg_y,
-            # 'seg_predictions': seg_pred
             }
     
     def test_step(self, batch, batch_idx):
@@ -325,11 +312,6 @@ class BERTModel(pl.LightningModule):
             'test_perplex': perplexity,
             'test_em': em,
             'test_f1': f1,
-            # 'labels':y,
-            # 'predictions':max_indices,
-            # 'confidence':confidence,
-            # 'seg_labels': seg_y,
-            # 'seg_predictions': seg_pred
             }
 
     def validation_epoch_end(self, output):

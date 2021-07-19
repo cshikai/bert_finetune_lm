@@ -99,6 +99,23 @@ There should be a cased and uncased version of the dataset.
     ```
   - Do NOT comment out pipeline in **main.py**
 
+- Allocate suitable partition size based on size of your data in the **model/src/model** folder. In **transforms.py**:
+```python
+  class PretrainTransforms():
+    def __init__(self, data: list, use_uncased: bool, mode: str):
+      self.data = data # list of lists of sections where each section is a list of sentences
+      self.use_uncased = use_uncased
+      self.mode = mode.lower()
+
+      # set number of partitions based on data size
+      if (self.mode == "train"):
+        self.nparts = 10
+      elif (self.mode == "valid"):
+        self.nparts = 2
+      elif (self.mode == "test"):
+        self.nparts = 1
+```
+
 ## Using other BERT models
 - In **model/src/model/transforms.py**, add a new class to transform the data into the format needed for tokenization for the model. In the Transformations class, add another elif statement to call the class.
 

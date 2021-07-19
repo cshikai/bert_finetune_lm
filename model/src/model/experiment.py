@@ -28,86 +28,15 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Union
 
-
-
-# def calc_accuracy(output,Y,mask):
-#     """
-#     Calculate the accuracy (point by point evaluation)
-#     :param output: output from the model (tensor)
-#     :param Y: ground truth given by dataset (tensor)
-#     :param mask: used to mask out the padding (tensor)
-#     :return: accuracy used for validation logs (float)
-#     """
-#     _ , max_indices = torch.max(output.data,1)
-#     max_indices = max_indices.view(mask.shape[1], mask.shape[0]).permute(1,0)
-#     Y = Y.view(mask.shape[1], mask.shape[0]).permute(1,0)
-#     max_indices = torch.masked_select(max_indices, mask)
-#     Y = torch.masked_select(Y, mask)
-#     train_acc = (max_indices == Y).sum().item()/max_indices.size()[0]
-#     return train_acc, max_indices, Y
-
-# def loss_function(trg, output, mask):
-#     """
-#     Calculate the loss (point by point evaluation)
-#     :param trg: ground truth given by dataset (tensor)
-#     :param output: output from the model (tensor)
-#     :param mask: used to mask out the padding (tensor)
-#     :return: loss needed for backpropagation and logging (float)
-#     """
-#     trg = trg[1:].permute(1,0,2)
-#     output = output[1:].permute(1,0,2)
-#     mask = mask.unsqueeze(2).expand(trg.size())
-#     trg = torch.masked_select(trg, mask)
-#     output = torch.masked_select(output, mask)
-#     label_mask = (trg != 0)
-#     selected = torch.masked_select(output, label_mask)
-#     loss = -torch.sum(selected) / selected.size()[0]
-#     return loss
-
-# def default_collate(batch,y_padding_value,mode3_padding_value,callsign_padding_value):
-#     """
-#     Stack the tensors from dataloader and pad sequences in batch
-#     :param batch: batch from the torch dataloader
-#     :return: stacked input to the seq2seq model
-#     """
-#     batch.sort(key=lambda x: x[-1], reverse=True)
-#     batch_x, batch_y, batch_mode3, batch_callsign, batch_len = zip(*batch)
-#     batch_pad_x = torch.nn.utils.rnn.pad_sequence(batch_x,batch_first=True)
-#     batch_pad_y = torch.nn.utils.rnn.pad_sequence(batch_y,batch_first=True,padding_value=y_padding_value)
-#     batch_pad_mode3 = torch.nn.utils.rnn.pad_sequence(batch_mode3,batch_first=True,padding_value=mode3_padding_value)
-#     batch_pad_callsign = torch.nn.utils.rnn.pad_sequence(batch_callsign,batch_first=True,padding_value=callsign_padding_value)
-
-#     batch_len = torch.Tensor(batch_len).type(torch.int64)
-#     return [batch_pad_x, batch_pad_y, batch_pad_mode3, batch_pad_callsign, batch_len]
-
-
-
 class Experiment(object):
    #should init as arguments here 
     def __init__(self, args):
         self.datapath = args.data_path
-        # self.features = args.data_features
-        # self.callsign_column = args.data_identifiers_callsign_data_column
-        # self.mode3_column = args.data_identifiers_mode3_data_column
-        # self.time_encoding_dims = args.data_time_encoding_dims
-        # self.n_features = (len(args.data_features) + self.time_encoding_dims -1) if self.time_encoding_dims else len(args.data_features)
-        # self.label = args.data_label
-       
-        # self.weight_by = args.data_weight_by
-
-        
-        # self.hid_dim = args.model_hidden_size
-        # self.n_layers = args.model_hidden_layers
-        # self.enc_dropout = args.model_enc_dropout
-        # self.dec_dropout = args.model_dec_dropout
-        # self.teacher_forcing = args.model_teacher_forcing
-
 
         self.checkpoint_dir = args.train_checkpoint_dir
         self.batch_size = args.train_batch_size
         self.learning_rate = args.train_lr
 
-        
         self.auto_lr = args.train_auto_lr
         self.n_gpu = args.train_n_gpu
         self.accelerator = args.train_accelerator
@@ -115,16 +44,8 @@ class Experiment(object):
         self.log_every_n_steps = args.train_log_every_n_steps
         self.save_top_k = args.train_save_top_k
         self.num_workers = args.train_num_workers
-
-        # self.n_mode3_token_embedding = args.model_n_mode3_token_embedding 
-        # self.n_mode3_token_layers = args.model_n_mode3_token_layers
-
-        # self.n_callsign_token_embedding = args.model_n_callsign_token_embedding 
-        # self.n_callsign_token_layers = args.model_n_callsign_token_layers
         
         self.seed = args.train_seed
-        # self.transforms = cfg['data']['transforms']
-        # self.lr_schedule = cfg['train']['lr_schedule']
 
         self.use_uncased = args.model_use_uncased
         self.max_length = args.model_sequence_length
@@ -136,7 +57,7 @@ class Experiment(object):
     def _get_callbacks(self, model_name):
         checkpoint_callback = CustomCheckpoint(
             dirpath=self.checkpoint_dir,
-            filename = 'SAMPLE-150-' + model_name + '-{epoch}',
+            filename = 'SAMPLE-1000-' + model_name + '-{epoch}',
             save_top_k= self.save_top_k,
             verbose=True,
             monitor='val_loss',
@@ -174,10 +95,12 @@ class Experiment(object):
         transformation_test = Transformations(task=task, mode="test", use_uncased=self.use_uncased)
         test_length = transformation_test()
 
+        # load dataset
         train_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="train", max_length=self.max_length, data_length=train_length)
         valid_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="valid", max_length=self.max_length, data_length=valid_length)
         test_dataset = CovidDataset(use_uncased=self.use_uncased, task=task, mode="test", max_length=self.max_length, data_length=test_length)
 
+        # data loaders
         train_loader = DataLoader(dataset = train_dataset, num_workers=self.num_workers, shuffle=True, collate_fn=train_dataset.collate_fn, batch_size=self.batch_size)
         valid_loader = DataLoader(dataset = valid_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=valid_dataset.collate_fn, batch_size=self.batch_size)
         test_loader = DataLoader(dataset = test_dataset, num_workers=self.num_workers, shuffle=False, collate_fn=test_dataset.collate_fn, batch_size=self.batch_size)
@@ -242,13 +165,8 @@ class Experiment(object):
                 parser.add_argument('--'+key,default=value)
 
         return parser
-
-    # @staticmethod
-    # def create_torchscript_model(model_name):
-    #     model = Seq2Seq.load_from_checkpoint(os.path.join(cfg['train']['checkpoint_dir'],model_name))
-    #     script = model.to_torchscript()
-    #     torch.jit.save(script, os.path.join(cfg['train']['checkpoint_dir'],"model.pt"))
     
+# Overwrite Pytorch's ModelCheckpoint to save model to S3. If on local machine, just ignore this part
 class CustomCheckpoint(ModelCheckpoint):
     CHECKPOINT_JOIN_CHAR = "-"
     CHECKPOINT_NAME_LAST = "last"
@@ -284,29 +202,7 @@ class CustomCheckpoint(ModelCheckpoint):
             every_n_val_epochs,
             period,
         )
-        
-
-        # self.monitor = monitor
-        # self.verbose = verbose
-        # self.save_last = save_last
-        # self.save_top_k = save_top_k
-        # self.save_weights_only = save_weights_only
-        # self.auto_insert_metric_name = auto_insert_metric_name
-        # self._last_global_step_saved = -1
-        # self._last_time_checked: Optional[float] = None
-        # self.current_score = None
-        # self.best_k_models = {}
-        # self.kth_best_model_path = ""
-        # self.best_model_score = None
-        # self.best_model_path = ""
-        # self.last_model_path = ""
-
-        # self.__init_monitor_mode(mode)
-        # self.__init_ckpt_dir(dirpath, filename, save_top_k)
-        # self.__init_triggers(every_n_train_steps, every_n_val_epochs, train_time_interval, period)
-        # self.__validate_init_configuration()
-        # self._save_function = None
-
+    
     def _save_model(self, trainer: 'pl.Trainer', filepath: str) -> None:
         if trainer.training_type_plugin.rpc_enabled:
             # RPCPlugin manages saving all model states
