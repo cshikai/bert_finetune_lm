@@ -1,9 +1,9 @@
 # Langauge Model Fine Tuning
-Fine tuning a pretrained BERT model on domain specific data. 
+Fine tuning a pretrained BERT model on domain-specific data. 
 
-Using BertForPreTraining, it combines Next Sentence Prediction & Masked Language Modelling to fine tune together. Then, using BertForQuestionAnswering, it is fine tuned for the QnA task. 
+Using BertForPreTraining, Next Sentence Prediction & Masked Language Modelling are done simultaneously to fine-tune the model. Then, using BertForQuestionAnswering, it is fine-tuned for the QuestionAnswering downstream task. 
 
-Domain can be changed to fine tune the model, as long as the dataset has the same format. 
+The domain used here is COVID-19, but it can be changed to any other domain language to fine-tune the model, as long as the dataset has the same format. 
 
 ## Table of Contents
 1) [Requirements](#requirements)
@@ -23,30 +23,30 @@ Domain can be changed to fine tune the model, as long as the dataset has the sam
 
 ### Once everything has been installed successfully, you can either:
 
-- Fine tune on COVID-19 data, and run QnA:
+- Fine-tune on COVID-19 data, and run QA:
    - Put data_cleaned.json & COVID-QA.json into **model/src/pipeline folder**
    
 
-- Fine tune on other data, and run QnA:
+- Fine-tune on other domain-specific data, and run QA:
    - Look at [using other datasets section](#using-other-datasets) to prepare data
    - Put COVID-QA.json into **model/src/pipeline folder**
 
-- Fine tune only, and not run QnA:
+- Fine-tune only, and not run QA:
   - Put data_cleaned.json into **model/src/pipeline folder**
-  - In **main.py**, comment out line to run QnA
+  - In **main.py**, comment out line to run QA
    ```python
     exp = experiment.Experiment(args, task)
     pretrain_best = exp.run_experiment(task='PRETRAIN', model_startpt=None)
     # exp.run_experiment(task='QA', model_startpt=pretrain_best)
    ```
-  - In **model/src/pipeline** folder, **pipeline.py**, comment out cleaning of QnA
+  - In **model/src/pipeline** folder, **pipeline.py**, comment out cleaning of QA
    ``` python
     def __call__(self):
         self.pretrain_clean()
-        #self.qna_clean()
+        # self.qa_clean()
    ```
 
-- Fine tune with other models:
+- Fine-tune with other models:
   - Refer to [using other BERT models](#using-other-bert-models)
 
 
@@ -54,15 +54,15 @@ Domain can be changed to fine tune the model, as long as the dataset has the sam
    ```bash
    docker-compose up --build
    ```
-Console will show a ClearML link, go to that link to see results of training
+Console will show a ClearML link, go to that link to see the progress and results of the training
 
-Trained models will be logged in **src/model/trained_models**
+Trained models will be saved and logged in **src/model/trained_models**
    
 
 
 ## Using other datasets
 
-### Dataset format
+### Dataset format (after pipeline)
 Dataset format:
 {"train": [[[]]], "valid": [[[]]], "test": [[[]]]}
 
@@ -72,7 +72,7 @@ There should be a cased and uncased version of the dataset.
 
 
 ### To use other datasets:
-- Your data already in the format
+- If your data is already in the required format
    - Put both the cased.json and uncased.json into **model/src/pipeline folder**
    - Comment out code calling for pipeline in **main.py**
      ```python
@@ -86,20 +86,20 @@ There should be a cased and uncased version of the dataset.
 
      ```
 
-- Your Data is not in format
-  - Edit **pipeline.py** code and add a method to format your data.
+- If your data is not in the required format
+  - Edit **pipeline.py** code and add a method to format your data, and comment out cleaning for pretrain.
     ```python
     def __call__(self):
-        self.pretrain_clean()
-        self.qna_clean()
+        # self.pretrain_clean()
         self.your_method()
+        self.qa_clean()
 
     def your_method(self):
        ... code to format data ...
     ```
   - Do NOT comment out pipeline in **main.py**
 
-- Allocate suitable partition size based on size of your data in the **model/src/model** folder. In **transforms.py**:
+- Allocate suitable partition size based on size of your data in the **model/src/model** folder. The ratio of partition sizes for train/valid/test should be 7/2/1. In **transforms.py**:
 ```python
   class PretrainTransforms():
     def __init__(self, data: list, use_uncased: bool, mode: str):
@@ -109,7 +109,7 @@ There should be a cased and uncased version of the dataset.
 
       # set number of partitions based on data size
       if (self.mode == "train"):
-        self.nparts = 10
+        self.nparts = 7
       elif (self.mode == "valid"):
         self.nparts = 2
       elif (self.mode == "test"):
@@ -129,7 +129,6 @@ class YourModelTransforms():
     
     # save the transformed data as a dataframe into model folder as a parquet file
 
-    
     df = pd.DataFrame({'sentence_a':sentence_a, 'sentence_b':sentence_b, 'labels':labels})
     df['idx'] = range(len(df))
     df = df.set_index('idx')
@@ -137,14 +136,18 @@ class YourModelTransforms():
     path1 = 'model/'+self.mode+'_temp_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_temp_cased.parquet'
     path2 = 'model/'+self.mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_data_transformed_cased.parquet'
 
+    # save original parquet
     df.to_parquet(path1, engine='fastparquet')
+    # load original parquet
     ddf = dd.read_parquet(path1, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
+
+    # repartition parquet and save
     ddf = ddf.repartition(npartitions=self.nparts).to_parquet(path2)
 
-    # remove old file
+    # delete original parquet
     os.remove(path1)
-    
-    return length of data 
+
+    return length of data
     
     . . .
 ```
@@ -155,8 +158,8 @@ def __call__(self):
     pretrain = PretrainTransforms(data=self.data)
     transformations = pretrain()
   elif self.task == "QA":
-     qa = QATransforms(data=self.data)
-     transformations = qa()
+    qa = QATransforms(data=self.data)
+    transformations = qa()
   elif self.task == "YOUR_MODEL":
     your_model = YourModelTransforms(data=self.data)
     transformations = your_model()
@@ -167,8 +170,7 @@ def __call__(self):
 - In **model/src/model/dataset.py**, add a new method to tokenize and format the data for model inputs. Example:
 ```python
 def tokenize_yourmodel(self, idx):
-  context = self.data_transformed['contexts'][idx]
-  data_tokenized = self.tokenizer(context, return_tensors='pt', truncation=False, padding=False)
+  data_tokenized = self.tokenizer(text_to_tokenize, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
   . . .
   return data_tokenized
 ```
@@ -179,7 +181,7 @@ def tokenize_steps(self, idx):
   if self.task == "PRETRAIN":
     data_tokenized = self.tokenize_pretrain(idx)
   elif self.task == "QA": 
-    data_tokenized = self.tokenize_qna(idx)
+    data_tokenized = self.tokenize_qa(idx)
   elif self.task == "YOURMODEL":
     data_tokenized = self.tokenize_yourmodel(idx)
 
@@ -223,7 +225,7 @@ def forward(self, input_ids, attention_mask, labels, next_sentence_label, start_
 
 ```
 
-- In the **training_step**, **validation_step** and **test_step** methods, ensure that the inputs when calling self(the forward method) have the correct values. For example, QA, start_positions end_positions are assigned while for Pretrain, labels and next_sentence_labels are assigned. 
+- In the **training_step**, **validation_step** and **test_step** methods, ensure that the inputs when calling self(the forward method) have the correct values. For example, for QA, start_positions end_positions are assigned while for Pretrain, labels and next_sentence_labels are assigned. 
 
 ```python
 def training_step(self, batch, batch_idx):
@@ -255,20 +257,20 @@ def training_step(self, batch, batch_idx):
 ## Documentation
 ### model/src
 - **main.py**
-  - ClearML task is created here, pipeline and experiment is called here to run. 
+  - ClearML task is created here, pipeline and experiment are called here to run. 
 
 
 ### model/src/pipeline
 - **pipeline.py**
-  - Dataset is formatted and cleaned here. It is also split into train/test/valid sets. Data is then output as a json file in the pipeline folder.
+  - Dataset is formatted and cleaned here. It is also split into train/valid/test sets. Data is then output as a json file in the pipeline folder.
 - **config.yaml**
   - Using either cased or uncased data is set here. 
 
 ### model/src/model
 - **transforms.py**
-  - Data is transformed here before tokenization. Different models/task may require different transformations.
+  - Data is transformed here before tokenization. Different models/tasks may require different transformations.
 - **dataset.py**
-  - Transforms is called here when dataset.py is initialized, then, tokenization is done in getitem.
+  - Transforms is called here when dataset.py is initialized, then, tokenization is done on the fly in the getitem method.
 - **model.py**
   - This is where the model is defined, along with the forward, training, validation and test steps.
 - **experiment.py**
