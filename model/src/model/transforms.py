@@ -18,13 +18,14 @@ class PretrainTransforms():
         self.use_uncased = use_uncased
         self.mode = mode.lower()
 
-        # set number of partitions based on data size
+        # set number of partitions based on data size (trial-and-error to see which one runs the fastest)
+        # ratio of the split should be 7/2/1 for train/valid/test
         if (self.mode == "train"):
-            self.nparts = 10
+            self.nparts = 200
         elif (self.mode == "valid"):
-            self.nparts = 2
+            self.nparts = 50
         elif (self.mode == "test"):
-            self.nparts = 1
+            self.nparts = 25
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
         sentence_a = []

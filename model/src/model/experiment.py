@@ -67,11 +67,11 @@ class Experiment(object):
         lr_logging_callback = LearningRateMonitor(logging_interval='step')
         if (model_name.upper() == "QA"):
             early_stopping_callback = EarlyStopping(
-                monitor='val_f1',
+                monitor='val_loss',
                 min_delta=0,
                 patience=3,
                 verbose=True,
-                mode='max',
+                mode='min',
                 strict=True,
                 check_finite=True,
                 stopping_threshold=None,

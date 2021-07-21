@@ -43,3 +43,9 @@ model/src/model/train_data_transformed_cased.parquet
 model/src/model/test_qna_data_transformed_cased.parquet
 model/src/model/train_qna_data_transformed_cased.parquet
 model/src/model/valid_qna_data_transformed_cased.parquet
+model/src/model/test_data_transformed_uncased.parquet
+model/src/model/valid_data_transformed_uncased.parquet
+model/src/model/train_data_transformed_uncased.parquet
+model/src/model/test_qna_data_transformed_uncased.parquet
+model/src/model/train_qna_data_transformed_uncased.parquet
+model/src/model/valid_qna_data_transformed_uncased.parquet
