@@ -59,7 +59,6 @@ class BERTModel(pl.LightningModule):
         NSPtarget = torch.reshape(labels, (-1,))
         accuracy = Accuracy().to(device="cuda")
         return accuracy(NSPpredictions, NSPtarget)
-
         
     # metric for MLM
     def calculate_perplexity(self, logits, labels):

@@ -69,7 +69,7 @@ class Experiment(object):
             early_stopping_callback = EarlyStopping(
                 monitor='val_loss',
                 min_delta=0,
-                patience=3,
+                patience=3, # stops training once monitored metric stops improving for 3 epochs
                 verbose=True,
                 mode='min',
                 strict=True,
