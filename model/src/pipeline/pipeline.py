@@ -20,7 +20,7 @@ class PMCDataPipeline(object):
         self.use_uncased = args.pipeline_use_uncased 
     def __call__(self):
         self.pretrain_clean()
-        self.qna_clean()
+        self.qa_clean()
        
     def pretrain_clean(self):
         # nltk.download('punkt')
@@ -62,7 +62,7 @@ class PMCDataPipeline(object):
             json.dump(split_data, outfile)
         outfile.close()
 
-    def qna_clean(self):
+    def qa_clean(self):
         # Download data
         # raw_url = 'https://drive.google.com/uc?id=1SJibr9KlCO89IQiZVMaVum9-iTb27r_s'
         output = 'pipeline/COVID-QA.json'
@@ -73,23 +73,22 @@ class PMCDataPipeline(object):
         data_list = []
         data_final = {}
 
-        structured_data = self.structure_qna(data['data'])
+        structured_data = self.structure_qa(data['data'])
 
         # Split to train test valid
-        data_list = self.qna_split_train_valid_test(structured_data)
+        data_list = self.qa_split_train_valid_test(structured_data)
 
         # Format data & Append to dict
-        data_final['train'] = self.format_qna(data_list['train'])
-        data_final['valid'] = self.format_qna(data_list['valid'])
-        data_final['test'] = self.format_qna(data_list['test'])
+        data_final['train'] = self.format_qa(data_list['train'])
+        data_final['valid'] = self.format_qa(data_list['valid'])
+        data_final['test'] = self.format_qa(data_list['test'])
 
-        # TODO: Check if qna needs cased and uncased
-        path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
+        path = 'pipeline/uncased_qa.json' if self.use_uncased else 'pipeline/cased_qa.json'
         with open(path, 'w') as outfile:
             json.dump(data_final, outfile)
         outfile.close()
 
-    def structure_qna(self, data):
+    def structure_qa(self, data):
         structured_data = []
         for group in data:
             pair_list = group['paragraphs'][0]['qas']
@@ -99,7 +98,7 @@ class PMCDataPipeline(object):
                 structured_data.append(pair)
         return structured_data
 
-    def format_qna(self, data_list):
+    def format_qa(self, data_list):
         data = []
 
         for pair in data_list:
@@ -143,7 +142,7 @@ class PMCDataPipeline(object):
         split_data = {'train': data_train, 'valid': data_valid, 'test': data_test} # ratio is ~70/20/10
         return split_data
 
-    def qna_split_train_valid_test(self, data):
+    def qa_split_train_valid_test(self, data):
         data_train, data_others = train_test_split(data, test_size=0.2, train_size=0.8, shuffle=True)
         data_valid, data_test = train_test_split(data_others, test_size=0.33, train_size=0.67, shuffle=True)
         split_data = {'train': data_train, 'valid': data_valid, 'test': data_test} # ratio is ~70/20/10

@@ -32,7 +32,7 @@ class CovidDataset(Dataset):
             self.features = ['sentence_a', 'sentence_b', 'labels']
             self.data = dd.read_parquet(self.path, columns=self.features, engine='fastparquet')
         elif (self.task == "QA"):
-            self.path = 'model/'+mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.parquet'
+            self.path = 'model/'+mode+'_qa_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_qa_data_transformed_cased.parquet'
             self.features = ['context', 'question', 'answer']
             self.data = dd.read_parquet(self.path, columns=self.features, engine='fastparquet')
         
@@ -58,7 +58,7 @@ class CovidDataset(Dataset):
         if self.task == "PRETRAIN":
             data_tokenized = self.tokenize_pretrain(data_transformed)
         elif self.task == "QA": 
-            data_tokenized = self.tokenize_qna(data_transformed)
+            data_tokenized = self.tokenize_qa(data_transformed)
 
         return data_tokenized
 
@@ -84,8 +84,8 @@ class CovidDataset(Dataset):
         
         return data_tokenized
 
-     # Tokenize for QNA (for one question-answer pair)
-    def tokenize_qna(self, data_transformed):
+     # Tokenize for QA (for one question-answer pair)
+    def tokenize_qa(self, data_transformed):
         # edit the context so the answer will always be in the context (since max seq length in bert we're using is 256)
         context = data_transformed['context']
         context_tokens = self.tokenizer(context, return_tensors='pt', truncation=False, padding=False)

@@ -101,7 +101,7 @@ class QATransforms():
 
         df = pd.DataFrame({'context':contexts, 'question':questions, 'answer':answers})
            
-        path = 'model/'+self.mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_qna_data_transformed_cased.parquet'
+        path = 'model/'+self.mode+'_qa_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+self.mode+'_qa_data_transformed_cased.parquet'
         
         df.to_parquet(path, engine='fastparquet')
 
@@ -117,7 +117,7 @@ class Transformations():
         
         if self.task == "QA":
             # path for QA
-            path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
+            path = 'pipeline/uncased_qa.json' if self.use_uncased else 'pipeline/cased_qa.json'
         elif self.task == "PRETRAIN":
             # paths for nsp and mlm
             path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
