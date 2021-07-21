@@ -11,7 +11,7 @@ import pandas as pd
 from torch.utils.data import DataLoader
 from transformers import BertForPreTraining, BertForQuestionAnswering, BertTokenizerFast, AdamW, get_scheduler
 from datasets import load_metric
-from torchmetrics import Accuracy, F1
+from torchmetrics import Accuracy
 import torch.nn.functional as F
 
 from .config import cfg

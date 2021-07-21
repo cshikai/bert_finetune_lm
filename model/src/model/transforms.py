@@ -117,7 +117,7 @@ class Transformations():
             path = 'pipeline/uncased_qna.json' if self.use_uncased else 'pipeline/cased_qna.json'
         elif self.task == "PRETRAIN":
             # paths for nsp and mlm
-            path = 'pipeline/uncased_150.json' if self.use_uncased else 'pipeline/cased_150.json'
+            path = 'pipeline/uncased.json' if self.use_uncased else 'pipeline/cased.json'
 
         with open(path) as f:
             all_data = json.load(f)

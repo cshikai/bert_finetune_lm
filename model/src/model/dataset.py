@@ -29,21 +29,12 @@ class CovidDataset(Dataset):
         mode = self.mode.lower()
         if (self.task == "PRETRAIN"):
             self.path = 'model/'+mode+'_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_data_transformed_cased.parquet'
-            self.data = dd.read_parquet(self.path, columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
-            # print("df original npartitions:", self.data.npartitions)
-            # self.data = self.data.repartition(npartitions=2).to_parquet('model/test{}.parquet'.format(mode))
-            # self.data = dd.read_parquet('model/test{}.parquet'.format(mode),columns=['sentence_a', 'sentence_b', 'labels'], engine='fastparquet')
-            # print("df new npartitions:", self.data.npartitions)
-
-            # start = time.time()
-            # data_transformed = self.data.loc[1].compute()
-            # end = time.time()
-            # print('idx:', 1, 'time taken to retrieve one row after partition:', end-start)
-            # # self.data = self.data.repartition(partition_size="100MB")
-            # print("self.data size:", sys.getsizeof(self.data))
+            self.features = ['sentence_a', 'sentence_b', 'labels']
+            self.data = dd.read_parquet(self.path, columns=self.features, engine='fastparquet')
         elif (self.task == "QA"):
             self.path = 'model/'+mode+'_qna_data_transformed_uncased.parquet' if self.use_uncased else 'model/'+mode+'_qna_data_transformed_cased.parquet'
-            self.data = dd.read_parquet(self.path, columns=['context', 'question', 'answer'], engine='fastparquet')
+            self.features = ['context', 'question', 'answer']
+            self.data = dd.read_parquet(self.path, columns=self.features, engine='fastparquet')
         
         self.tokenizer = BertTokenizerFast.from_pretrained('bert_cached/bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert_cached/bert-base-cased')
         
@@ -95,7 +86,7 @@ class CovidDataset(Dataset):
 
      # Tokenize for QNA (for one question-answer pair)
     def tokenize_qna(self, data_transformed):
-        # edit the context so the answer will always be in the context
+        # edit the context so the answer will always be in the context (since max seq length in bert we're using is 256)
         context = data_transformed['context']
         context_tokens = self.tokenizer(context, return_tensors='pt', truncation=False, padding=False)
         
@@ -136,6 +127,5 @@ class CovidDataset(Dataset):
         for i in range(1, len(batch_list)):
             for k, v in batch_list[i].items():
                 batch[k] = torch.cat((batch[k], v), 0)
-        # linecache.clearcache()
         return batch
 
