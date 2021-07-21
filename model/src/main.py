@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     task = Task.init(project_name="BERT", task_name="Fine tuning for domain specificity")
     # task = Task.init(project_name="BERT", task_name="test Fine tuning for QA - using pretraining ckpt (cased) early stopping, patience=3")
-    seed.make_deterministic(seed=random.randint(0, 10000))
+    seed.make_deterministic(seed=random.randint(0, 10000)) # randomize clearml seed
     model_config_dict = task.connect_configuration(cfg,name='Model Training Parameters')
     pipeline_config_dict = task.connect_configuration(pipeline_cfg,name='Data Pipeline Parameters')
         

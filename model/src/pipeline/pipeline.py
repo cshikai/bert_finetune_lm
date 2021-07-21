@@ -23,7 +23,7 @@ class PMCDataPipeline(object):
         self.qna_clean()
        
     def pretrain_clean(self):
-        # nltk.download('all')
+        # nltk.download('punkt')
         sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
         # Download cleaned data from gdrive

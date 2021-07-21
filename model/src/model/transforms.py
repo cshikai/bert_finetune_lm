@@ -19,13 +19,16 @@ class PretrainTransforms():
         self.mode = mode.lower()
 
         # set number of partitions based on data size (trial-and-error to see which one runs the fastest)
-        # ratio of the split should be 7/2/1 for train/valid/test
+        # ratio of self.nparts should be 7/2/1 for train/valid/test
         if (self.mode == "train"):
-            self.nparts = 200
+            # self.nparts = 60 # for 1 gpu
+            self.nparts = 200 # for 2 gpus on aip
         elif (self.mode == "valid"):
-            self.nparts = 50
+            # self.nparts = 18 # for 1 gpu
+            self.nparts = 50 # for 2 gpus on aip
         elif (self.mode == "test"):
-            self.nparts = 25
+            # self.nparts = 9 # for 1 gpu
+            self.nparts = 25 # for 2 gpus on aip
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
         sentence_a = []
@@ -92,7 +95,6 @@ class QATransforms():
         
         for i, item in enumerate(self.data):
             if (('answer_start' and 'answer_end') in item['answer'].keys()):
-
                 contexts.append(self.data[i]['context'])
                 questions.append(self.data[i]['question'])
                 answers.append(self.data[i]['answer'])
