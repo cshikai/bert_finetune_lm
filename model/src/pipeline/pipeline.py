@@ -15,9 +15,9 @@ import unidecode
 
 
 class PMCDataPipeline(object):
-
     def __init__(self, args):
-        self.use_uncased = args.pipeline_use_uncased 
+        self.use_uncased = args.pipeline_use_uncased
+        
     def __call__(self):
         self.pretrain_clean()
         self.qa_clean()

@@ -54,6 +54,7 @@ class Experiment(object):
     def _get_logger(self):
         logger = TensorBoardLogger(self.checkpoint_dir, name='logs')
         return logger
+        
     def _get_callbacks(self, model_name):
         checkpoint_callback = CustomCheckpoint(
             dirpath=self.checkpoint_dir,
@@ -213,7 +214,6 @@ class CustomCheckpoint(ModelCheckpoint):
             self._do_save(trainer, filepath)
 
         # call s3 function here to upload file to s3 using filepath
-
        
         best_model_path = self.best_model_path
         best_model_name = best_model_path.split("/")[-1]

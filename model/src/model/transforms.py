@@ -29,6 +29,7 @@ class PretrainTransforms():
         elif (self.mode == "test"):
             # self.nparts = 9 # for 1 gpu
             self.nparts = 25 # for 2 gpus on aip
+            
     def __call__(self):
         # print("transforms.py: in NSPTokenization class")
         sentence_a = []
@@ -88,6 +89,7 @@ class QATransforms():
         self.data = data
         self.mode = mode
         self.use_uncased = use_uncased
+
     def __call__(self):
         contexts = []
         questions = []
@@ -113,6 +115,7 @@ class Transformations():
         self.task = task
         self.mode = mode 
         self.use_uncased = use_uncased
+        
     def __call__(self):
         
         if self.task == "QA":

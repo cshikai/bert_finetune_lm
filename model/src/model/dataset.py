@@ -36,9 +36,10 @@ class CovidDataset(Dataset):
             self.features = ['context', 'question', 'answer']
             self.data = dd.read_parquet(self.path, columns=self.features, engine='fastparquet')
         
-        self.tokenizer = BertTokenizerFast.from_pretrained('bert_cached/bert-base-uncased') if self.use_uncased else BertTokenizerFast.from_pretrained('bert_cached/bert-base-cased')
-        
-        
+        self.use_case_uncase = 'bert-base-uncased' if self.use_uncased else 'bert-base-cased'
+        # self.bert_case_uncase = 'bert_cached/bert-base-uncased' if self.use_uncased else 'bert_cached/bert-base-cased' # if need to download the models first, put into src/bert_cached
+        self.tokenizer = BertTokenizerFast.from_pretrained(self.use_case_uncase)
+
     def __getitem__(self, idx):
         # tokenize data (one sample in the entire dataset (so one seq), not one batch)
         data_transformed = {}
@@ -48,10 +49,8 @@ class CovidDataset(Dataset):
         data_tokenized = self.tokenize_steps(data_transformed[0])
         return data_tokenized
 
-
     def __len__(self):
         return len(self.data)
-    
     
     # Choose tokenizing steps based on task
     def tokenize_steps(self, data_transformed):

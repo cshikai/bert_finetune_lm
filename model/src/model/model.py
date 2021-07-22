@@ -24,7 +24,8 @@ class BERTModel(pl.LightningModule):
         self.task = task.upper()
         self.seq_length = seq_length
         self.model_startpoint = model_startpt
-        self.bert_case_uncase = 'bert_cached/bert-base-uncased' if self.use_uncased else 'bert_cached/bert-base-cased'
+        # self.bert_case_uncase = 'bert_cached/bert-base-uncased' if self.use_uncased else 'bert_cached/bert-base-cased' # if need to download the models first, put into src/bert_cached
+        self.bert_case_uncase = 'bert-base-uncased' if self.use_uncased else 'bert-base-cased'
         # declare model and other stuff like optimizers here
         # start training the model from fresh pre-trained BERT
         if (self.model_startpoint is None):
@@ -175,7 +176,6 @@ class BERTModel(pl.LightningModule):
             labels = batch['labels']
             next_sentence_label = batch["next_sentence_label"]
         
-
         # call forward
         output = self(input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids)
         loss = output.loss
@@ -194,7 +194,6 @@ class BERTModel(pl.LightningModule):
             self.log('train_exactmatch', em, sync_dist=self.distributed)
             f1 = self.calculate_f1(input_ids, start_positions, end_positions, output.start_logits, output.end_logits)
             self.log('train_f1', f1, sync_dist=self.distributed)
-
         
         # return {"loss": loss, "predictions": output, "labels": labels}
         return {'loss': loss}
@@ -217,7 +216,6 @@ class BERTModel(pl.LightningModule):
         elif self.task == "PRETRAIN":
             labels = batch['labels']
             next_sentence_label = batch["next_sentence_label"]
-        
 
         # call forward
         output = self(input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids)
@@ -268,7 +266,6 @@ class BERTModel(pl.LightningModule):
         elif self.task == "PRETRAIN":
             labels = batch['labels']
             next_sentence_label = batch["next_sentence_label"]
-        
 
         # call forward
         output = self(input_ids, attention_mask, labels, next_sentence_label, start_positions, end_positions, token_type_ids)
@@ -300,10 +297,7 @@ class BERTModel(pl.LightningModule):
                 print("\nQuestion:", questions[i])
                 print("\nPredicted Answer:", pred_answers[i])
                 print("\nActual Answer:", actual_answers[i])
-                if (questions[i]=="How has the mortality rate due to influenza declined in USA over past decades?"):
-                    print("token start and end positions:", start_positions[i], end_positions[i])
                 print("\n----------------------------------------------------------------------------------------------")
-
 
         return {
             'test_loss': loss,
