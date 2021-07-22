@@ -30,7 +30,8 @@ model/src/pipeline/__pycache__/config.cpython-38.pyc
 model/src/pipeline/__pycache__/pipeline.cpython-38.pyc
 model/src/remote/__pycache__/config.cpython-38.pyc
 model/src/remote/__pycache__/s3utility.cpython-38.pyc
-model/src/pipeline/cased_qna.json
+model/src/pipeline/cased_qa.json
+model/src/pipeline/uncased_qa.json
 model/src/data_to_preprocess_qa.json
 model/src/pipeline/COVID-QA.json
 model/src/pipeline/data_cleaned.json
